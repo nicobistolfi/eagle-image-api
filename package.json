@@ -9,7 +9,8 @@
     "prestart": "npm run build",
     "start": "node dist/index.js",
     "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
   },
   "author": "Nico Bistolfi",
   "license": "ISC",
@@ -31,6 +32,7 @@
     "eslint": "^8.21.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "nodemon": "^2.0.19"
+    "nodemon": "^2.0.19",
+    "husky": "^8.0.0"
   }
 }
