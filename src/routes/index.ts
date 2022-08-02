@@ -1,13 +1,10 @@
-import axios from 'axios'
-import express, { Response, Request, Router } from 'express'
-import { Image, ImageObject } from '../lib/image'
+import { Response, Request, Router } from 'express'
+import { Image } from '../lib/image'
 
 const route = Router()
-const path = require('path')
 
 route.get('/api/v1/image', async (req: Request, res: Response) => {
   const image = new Image(req.query.url as string)
-  console.log(await image.isImage())
   await image.loadImage()
   await image.processRequest(req)
   // res.send(imageObject.data);

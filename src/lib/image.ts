@@ -88,7 +88,7 @@ class Image {
         // withoutEnlargement: q.withoutEnlargement as boolean || undefined,
         // withoutReduction: q.withoutReduction as boolean || undefined,
         // fastShrinkOnLoad: q.fastShrinkOnLoad as boolean || undefined,
-      }
+      },
     )
   }
 
