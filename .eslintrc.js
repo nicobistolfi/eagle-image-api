@@ -17,8 +17,8 @@ module.exports = {
       'always',
       { exceptAfterSingleLine: true },
     ],
-    // disbable import/extension rule
     'import/extensions': 'off',
+    'linebreak-style': 'off',
   },
   settings: {
     'import/resolver': {
