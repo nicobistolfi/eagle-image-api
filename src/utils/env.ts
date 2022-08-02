@@ -1,4 +1,4 @@
-import dotenv, { DotenvConfigOptions } from 'dotenv'
+import dotenv from 'dotenv'
 import dotenvParseVariables, { Parsed } from 'dotenv-parse-variables'
 
 let env: any = dotenv.config()

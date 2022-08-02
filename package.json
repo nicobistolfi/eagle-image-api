@@ -7,7 +7,7 @@
     "prebuild": "eslint -c .eslintrc.js --fix src/**/*.ts",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "ts-node src/index.ts",
+    "start": "node dist/index.js",
     "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -12,6 +12,11 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   rules: {
     semi: ['error', 'never'],
+    'lines-between-class-members': [
+      'error',
+      'always',
+      { exceptAfterSingleLine: true },
+    ],
     // disbable import/extension rule
     'import/extensions': 'off',
   },

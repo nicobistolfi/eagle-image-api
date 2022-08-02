@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { Request, Response } from 'express'
-import sharp, { FitEnum, Sharp } from 'sharp'
+import sharp, { Sharp } from 'sharp'
 import { QUALITY, FIT } from '../utils/env'
 import { toBoolean } from '../utils/helpers'
 
@@ -21,10 +21,11 @@ type ImageObject = {
 
 class Image {
   url: string
-
+  // eslint-disable-next-line lines-between-class-members
   type: string | undefined
-
   data: Buffer | undefined
+  width: number | undefined
+  height: number | undefined
 
   constructor(url: string) {
     this.url = url
@@ -78,8 +79,8 @@ class Image {
 
   resizeByQuery(s: Sharp, q: any): void {
     s.resize(
-      parseInt(q.width as string) || undefined,
-      parseInt(q.height as string) || undefined,
+      Number(q.width as string) || undefined,
+      Number(q.height as string) || undefined,
       {
         fit: q.fit || (FIT as string),
         position: (q.position as string) || undefined,
@@ -90,36 +91,39 @@ class Image {
         // fastShrinkOnLoad: q.fastShrinkOnLoad as boolean || undefined,
       },
     )
+    this.width = q.width ? Number(q.width) : undefined
+    this.height = q.height ? Number(q.height) : undefined
   }
 
   convertFormatByAccept(s: Sharp, q: any, accept: string): void {
     // return compatible format
-    if (accept.includes('image/avif') && this.type != 'image/gif') {
+    if (accept.includes('image/avif') && this.type !== 'image/gif') {
       this.type = 'image/avif'
       s.avif({
-        quality: (parseInt(q.quality) as number) || QUALITY,
-        lossless: q.lossless != undefined ? toBoolean(q.lossless) : undefined,
-        effort: (parseInt(q.webpEffort) as number) || undefined,
+        quality: (Number(q.quality) as number) || QUALITY,
+        lossless: q.lossless !== undefined ? toBoolean(q.lossless) : undefined,
+        effort: (Number(q.webpEffort) as number) || undefined,
       })
     } else if (accept.includes('image/webp')) {
       this.type = 'image/webp'
       s.webp({
-        quality: (parseInt(q.quality) as number) || QUALITY,
-        lossless: q.lossless != undefined ? toBoolean(q.lossless) : undefined,
-        alphaQuality: (parseInt(q.alphaQuality) as number) || undefined,
-        effort: (parseInt(q.webpEffort) as number) || undefined,
-        loop: (parseInt(q.loop) as number) || undefined,
-        delay: (parseInt(q.delay) as number) || undefined,
+        quality: (Number(q.quality) as number) || QUALITY,
+        lossless: q.lossless !== undefined ? toBoolean(q.lossless) : undefined,
+        alphaQuality: (Number(q.alphaQuality) as number) || undefined,
+        effort: (Number(q.webpEffort) as number) || undefined,
+        loop: (Number(q.loop) as number) || undefined,
+        delay: (Number(q.delay) as number) || undefined,
       })
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
   performOperationsByQuery(s: Sharp, q: any): void {
-    if (q.blur && parseInt(q.blur) > 0 && parseInt(q.blur) <= 100) {
-      s.blur(parseInt(q.blur) as number)
+    if (q.blur && Number(q.blur) > 0 && Number(q.blur) <= 100) {
+      s.blur(Number(q.blur) as number)
     }
-    if (q.sharpen && parseInt(q.sharpen) > 1 && parseInt(q.sharpen) <= 100) {
-      s.sharpen(parseInt(q.sharpen) as number)
+    if (q.sharpen && Number(q.sharpen) > 1 && Number(q.sharpen) <= 100) {
+      s.sharpen(Number(q.sharpen) as number)
     }
     if (q.flip) {
       s.flip()
@@ -128,7 +132,7 @@ class Image {
       s.flop()
     }
     if (q.rotate) {
-      s.rotate(parseInt(q.rotate) as number, {
+      s.rotate(Number(q.rotate) as number, {
         background: (q.background as string) || undefined,
       })
     }
