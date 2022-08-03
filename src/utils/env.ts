@@ -9,7 +9,7 @@ if (fs.existsSync('.env')) {
   if (env.error) throw env.error
   env = dotenvParseVariables(env.parsed as Parsed)
 } else {
-  // load dotenv from process.env
+  // load envs from process.env
   env = dotenvParseVariables(process.env as any)
 }
 
