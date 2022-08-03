@@ -9,8 +9,9 @@
   "scripts": {
     "lint": "eslint -c .eslintrc.js --fix src/**/*.ts",
     "build": "tsc",
+    "postinstall": "npm run build",
     "prestart": "npm run build",
-    "start": "tsc & node dist/index.js",
+    "start": "node dist/index.js",
     "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install"
