@@ -1,6 +1,6 @@
 import express, { Application } from 'express'
 
-import dotenv from 'dotenv'
+import dotenv, { DotenvConfigOptions } from 'dotenv'
 import dotenvParseVariables, { Parsed } from 'dotenv-parse-variables'
 
 import route from './routes/index'
@@ -8,7 +8,7 @@ import route from './routes/index'
 const app: Application = express()
 const cors = require('cors')
 
-let env: any = dotenv.config({ silent: true })
+let env: any = dotenv.config({ silent: true } as DotenvConfigOptions)
 if (env.error) throw env.error
 env = dotenvParseVariables(env.parsed as Parsed)
 

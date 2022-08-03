@@ -23,6 +23,7 @@
     }
   },
   "dependencies": {
+    "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.13",
     "axios": "^0.27.2",
     "cors": "^2.8.5",
@@ -40,7 +41,7 @@
     "eslint": "^8.21.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "nodemon": "^2.0.19",
-    "husky": "^8.0.0"
+    "husky": "^8.0.0",
+    "nodemon": "^2.0.19"
   }
 }
