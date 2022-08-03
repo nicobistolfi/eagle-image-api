@@ -11,4 +11,5 @@ npm install
 npm run start
 ```
 
-##
+## Guides
+- Deploying to Heroku and AWS Cloudfront
