@@ -1,9 +1,11 @@
+import { debug } from 'console'
 import { Response, Request, Router } from 'express'
 import { Image } from '../lib/image'
 
 const route = Router()
 
 route.get('/api/v1/image', async (req: Request, res: Response) => {
+  debug('GET /api/v1/image')
   const image = new Image(req.query.url as string)
   await image.loadImage()
   await image.processRequest(req)

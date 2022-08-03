@@ -13,12 +13,6 @@ const defaultHeaders = {
   'Upgrade-Insecure-Requests': '1',
 }
 
-type ImageObject = {
-  url: string
-  type: string
-  data: string
-}
-
 class Image {
   url: string
   // eslint-disable-next-line lines-between-class-members
@@ -26,6 +20,7 @@ class Image {
   data: Buffer | undefined
   width: number | undefined
   height: number | undefined
+  s: Sharp | undefined
 
   constructor(url: string) {
     this.url = url
@@ -48,6 +43,12 @@ class Image {
         .then((response) => {
           this.type = response.headers['content-type'] as string
           this.data = Buffer.from(response.data, 'base64')
+          this.s = sharp(this.data)
+          this.s.metadata((err: any, metadata: any) => {
+            if (err) reject(err)
+            this.width = metadata.width
+            this.height = metadata.height
+          })
           resolve(this)
         })
         .catch((err) => {
@@ -60,13 +61,12 @@ class Image {
     return new Promise((resolve, reject) => {
       const q: any = req.query
       const h: any = req.headers
-      const s = sharp(this.data)
 
-      this.resizeByQuery(s, q)
-      this.performOperationsByQuery(s, q)
-      this.convertFormatByAccept(s, q, h.accept)
+      this.resizeByQuery(q)
+      this.performOperationsByQuery(q)
+      this.convertFormatByAccept(q, h.accept)
 
-      s.toBuffer((err: any, buffer: Buffer) => {
+      this.s?.toBuffer((err: any, buffer: Buffer) => {
         if (err) {
           reject(err)
         } else {
@@ -77,8 +77,8 @@ class Image {
     })
   }
 
-  resizeByQuery(s: Sharp, q: any): void {
-    s.resize(
+  resizeByQuery(q: any): void {
+    this.s?.resize(
       Number(q.width as string) || undefined,
       Number(q.height as string) || undefined,
       {
@@ -95,18 +95,18 @@ class Image {
     this.height = q.height ? Number(q.height) : undefined
   }
 
-  convertFormatByAccept(s: Sharp, q: any, accept: string): void {
+  convertFormatByAccept(q: any, accept: string): void {
     // return compatible format
     if (accept.includes('image/avif') && this.type !== 'image/gif') {
       this.type = 'image/avif'
-      s.avif({
+      this.s?.avif({
         quality: (Number(q.quality) as number) || QUALITY,
         lossless: q.lossless !== undefined ? toBoolean(q.lossless) : undefined,
         effort: (Number(q.webpEffort) as number) || undefined,
       })
     } else if (accept.includes('image/webp')) {
       this.type = 'image/webp'
-      s.webp({
+      this.s?.webp({
         quality: (Number(q.quality) as number) || QUALITY,
         lossless: q.lossless !== undefined ? toBoolean(q.lossless) : undefined,
         alphaQuality: (Number(q.alphaQuality) as number) || undefined,
@@ -118,21 +118,21 @@ class Image {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  performOperationsByQuery(s: Sharp, q: any): void {
+  performOperationsByQuery(q: any): void {
     if (q.blur && Number(q.blur) > 0 && Number(q.blur) <= 100) {
-      s.blur(Number(q.blur) as number)
+      this.s?.blur(Number(q.blur) as number)
     }
     if (q.sharpen && Number(q.sharpen) > 1 && Number(q.sharpen) <= 100) {
-      s.sharpen(Number(q.sharpen) as number)
+      this.s?.sharpen(Number(q.sharpen) as number)
     }
     if (q.flip) {
-      s.flip()
+      this.s?.flip()
     }
     if (q.flop) {
-      s.flop()
+      this.s?.flop()
     }
     if (q.rotate) {
-      s.rotate(Number(q.rotate) as number, {
+      this.s?.rotate(Number(q.rotate) as number, {
         background: (q.background as string) || undefined,
       })
     }
@@ -150,4 +150,4 @@ class Image {
 }
 
 export default Image
-export { Image, ImageObject }
+export { Image }
