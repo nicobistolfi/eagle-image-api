@@ -9,7 +9,7 @@ const app: Application = express()
 const cors = require('cors')
 
 let env: any = dotenv.config({ silent: true } as DotenvConfigOptions)
-if (env.error) throw env.error
+// if (env.error) throw env.error
 env = dotenvParseVariables(env.parsed as Parsed)
 
 const PORT: number = env.PORT || 3000
