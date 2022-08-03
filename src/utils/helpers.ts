@@ -4,4 +4,3 @@ function toBoolean(value: any): boolean {
 
 // eslint-disable-next-line import/prefer-default-export
 export { toBoolean }
-// test

@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "husky pre-commit"\
-npm run pre-build
+echo "husky pre-commit"
+
+npm run prebuild
