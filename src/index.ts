@@ -8,7 +8,7 @@ import route from './routes/index'
 const app: Application = express()
 const cors = require('cors')
 
-let env: any = dotenv.config({})
+let env: any = dotenv.config({ silent: true })
 if (env.error) throw env.error
 env = dotenvParseVariables(env.parsed as Parsed)
 
