@@ -14,9 +14,25 @@ if (fs.existsSync('.env')) {
 }
 
 const {
-  PORT = 3000, LOSELESS = false, QUALITY = 80, FIT = 'outside',
+  ENVIRONMENT = 'production',
+  API_ENDPOINT = '/api/image',
+  PORT = 3000,
+  LOSELESS = false,
+  QUALITY = 80,
+  FIT = 'outside',
+  LOG_LEVEL = 'info',
+  ORIGIN_WHITELIST = '*',
+  REDIRECT_ON_ERROR = false,
 } = env
 
 export {
-  PORT, LOSELESS, QUALITY, FIT,
+  ENVIRONMENT,
+  API_ENDPOINT,
+  PORT,
+  LOSELESS,
+  QUALITY,
+  FIT,
+  LOG_LEVEL,
+  ORIGIN_WHITELIST,
+  REDIRECT_ON_ERROR,
 }

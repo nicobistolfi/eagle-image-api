@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Request, Response } from 'express'
 import sharp, { Sharp } from 'sharp'
-import { QUALITY, FIT } from '../utils/env'
+import { QUALITY, FIT, ORIGIN_WHITELIST } from '../utils/env'
 import { toBoolean } from '../utils/helpers'
 
 const defaultHeaders = {
@@ -34,6 +34,10 @@ class Image {
   }
 
   async loadImage(): Promise<Image> {
+    // check if url is from whitelisted domain
+    if (ORIGIN_WHITELIST !== '*' && !ORIGIN_WHITELIST.includes(this.url.split('/')[2])) {
+      throw new Error('Origin not allowed')
+    }
     return new Promise((resolve, reject) => {
       axios
         .get(this.url, {
