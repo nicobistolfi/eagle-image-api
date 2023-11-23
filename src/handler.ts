@@ -44,12 +44,12 @@ const api = async (event: any) => {
   };
 };
 
-const get = async (event: any, context: any) => {
+const get = async (event: any) => {
   switch (event.path) {
     case '/health':
       return health();
     case API_ENDPOINT:
-      return api(event, context);
+      return api(event);
     default:
       return {
         statusCode: 404,
@@ -61,7 +61,7 @@ const get = async (event: any, context: any) => {
 const handler = async (event: any, context: any) => {
   switch (event.httpMethod) {
     case 'GET':
-      return await get(event, context);
+      return get(event);
     default:
       return {
         statusCode: 405,

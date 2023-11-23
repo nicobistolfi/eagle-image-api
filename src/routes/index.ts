@@ -23,7 +23,7 @@ route.get(API_ENDPOINT, async (req: Request, res: Response) => {
     }
     await image.loadImage();
     await image.processRequest(req);
-    image.setResponseHeaders(res);
+    // image.setResponseHeaders(res);
     const body = await image.buffer();
     // console.log(body?.toString('base64'));
     res.json({
