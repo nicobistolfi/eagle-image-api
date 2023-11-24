@@ -4,7 +4,7 @@ import * as awsServerlessExpress from 'aws-serverless-express';
 import route from './routes/index';
 import { API_ENDPOINT } from './utils/env';
 import Image from './lib/image';
-import { debug } from './utils/logger';
+import { debug, error, silly } from './utils/logger';
 
 const app: Application = express();
 const cors = require('cors');
@@ -25,48 +25,76 @@ const health = () => ({
 });
 
 const api = async (event: any) => {
-  const imageUrl: string = event.queryStringParameters.url;
-  const image: Image = new Image(imageUrl);
-  const isImage: boolean = await image.isImage();
-  if (!isImage) {
-    debug(`HEAD ${imageUrl} is not image`);
-    return err404;
-  }
-  await image.loadImage();
-  await image.processRESTEvent(event);
-  const body = await (await image.buffer())?.toString('base64');
+  try {
+    const imageUrl: string = event.queryStringParameters.url;
+    const image: Image = new Image(imageUrl);
+    const isImage: boolean = await image.isImage();
+    if (!isImage) {
+      debug(`HEAD ${imageUrl} is not image`);
+      return err404;
+    }
+    await image.loadImage();
+    await image.processRESTEvent(event);
+    const body = await (await image.buffer())?.toString('base64');
 
-  return {
-    statusCode: 200,
-    headers: image.getResponseHeaders(),
-    body,
-    isBase64Encoded: true,
-  };
+    return {
+      statusCode: 200,
+      headers: image.getResponseHeaders(),
+      body,
+      isBase64Encoded: true,
+    };
+  } catch (err: any) {
+    error('GET %s \n\n%s', event.path, err);
+    return {
+      statusCode: 400,
+      body: err.message,
+    };
+  }
 };
 
 const get = async (event: any) => {
-  switch (event.path) {
-    case '/health':
-      return health();
-    case API_ENDPOINT:
-      return api(event);
-    default:
-      return {
-        statusCode: 404,
-        body: 'Not Found',
-      };
+  try {
+    switch (event.path) {
+      case '/health':
+        silly('health endpoint');
+        return health();
+      case API_ENDPOINT:
+        silly('api endpoint');
+        return api(event);
+      default:
+        silly('unknown endpoint');
+        return {
+          statusCode: 404,
+          body: 'Not Found',
+        };
+    }
+  } catch (err: any) {
+    error('GET %s \n\n%s', event.path, err);
+    return {
+      statusCode: 400,
+      body: err.message,
+    };
   }
 };
 
 const handler = async (event: any, context: any) => {
-  switch (event.httpMethod) {
-    case 'GET':
-      return get(event);
-    default:
-      return {
-        statusCode: 405,
-        body: 'Method Not Allowed',
-      };
+  debug('GET %s', event.path);
+  try {
+    switch (event.httpMethod) {
+      case 'GET':
+        return get(event);
+      default:
+        return {
+          statusCode: 405,
+          body: 'Method Not Allowed',
+        };
+    }
+  } catch (err: any) {
+    error('GET %s \n\n%s', event.path, err);
+    return {
+      statusCode: 400,
+      body: err.message,
+    };
   }
 };
 

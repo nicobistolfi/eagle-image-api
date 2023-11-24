@@ -30,5 +30,9 @@ function error(message: string, ...args: any[]) {
   logger.log('error', util.format(message, ...args));
 }
 
+function silly(message: string, ...args: any[]) {
+  logger.log('silly', util.format(message, ...args));
+}
+
 export default logger;
-export { info, debug, error };
+export { info, debug, error, silly };
