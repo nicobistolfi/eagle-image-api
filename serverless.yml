@@ -1,0 +1,113 @@
+# serverless.yml
+service: image-api
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-plugin-include-dependencies
+  - serverless-dotenv-plugin
+  - serverless-offline
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-west-1
+  versionFunctions: false
+  lambdaHashingVersion: 20201221
+  endpointType: REGIONAL
+  apiGateway:
+    metrics: true
+    binaryMediaTypes:
+      - "*/*"
+  logs:
+    restApi:
+      level: INFO
+      accessLogging: true
+  
+functions:
+  processing:
+    handler: ./src/handler.handler
+    timeout: 30
+    memorySize: 2048
+    events:
+      - http:
+          path: /
+          method: get
+          cors: true
+      - http:
+          path: /{proxy+}
+          method: get
+          cors: true
+          response:
+            contentHandling: CONVERT_TO_BINARY
+
+            
+    layers:
+      - {Ref: SharpLambdaLayer}
+
+layers:
+  sharp:
+    path: node_modules/sharp
+    compatibleRuntimes:
+      - nodejs18.x
+
+resources:
+  Resources:
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - Id: ApiGatewayOrigin
+              OriginPath: "/${self:provider.stage}"
+              DomainName: 
+                Fn::Join: [".", [Ref: "ApiGatewayRestApi", "execute-api.${self:provider.region}.amazonaws.com"]]
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols:
+                  - "TLSv1.2"
+          HttpVersion: http2
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+            TargetOriginId: ApiGatewayOrigin
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+    GatewayReponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          gatewayresponse.header.Strict-Transport-Security: "'max-age=31536000; includeSubdomains; preload'"
+          gatewayresponse.header.X-Content-Type-Options: "'nosniff'"
+          gatewayresponse.header.X-Frame-Options: "'DENY'"
+          gatewayresponse.header.X-XSS-Protection: "'1; mode=block'"
+          gatewayresponse.header.Referrer-Policy: "'same-origin'"
+          gatewayresponse.header.Content-Security-Policy: "'default-src 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          gatewayresponse.header.Strict-Transport-Security: "'max-age=31536000; includeSubdomains; preload'"
+          gatewayresponse.header.X-Content-Type-Options: "'nosniff'"
+          gatewayresponse.header.X-Frame-Options: "'DENY'"
+          gatewayresponse.header.X-XSS-Protection: "'1; mode=block'"
+          gatewayresponse.header.Referrer-Policy: "'same-origin'"
+          gatewayresponse.header.Content-Security-Policy: "'default-src 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: ApiGatewayRestApi

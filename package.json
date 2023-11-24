@@ -1,0 +1,60 @@
+{
+  "name": "image-api",
+  "version": "0.9.0",
+  "description": "Typescript Image Optimization API using Sharp",
+  "main": "src/index.ts",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "lint": "eslint -c .eslintrc.js --fix src/**/*.ts",
+    "build": "npm rebuild --platform=linux --arch=x64 sharp && npm rebuild --platform=linux --arch=arm64 sharp && tsc",
+    "postinstall": "npm run build",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install",
+    "serverless:deploy": "npm install --platform=linux --arch=x64 && serverless deploy",
+    "serverless:remove": "serverless remove",
+    "serverless:info": "serverless info",
+    "serverless:logs": "serverless logs -f image"
+  },
+  "author": "Nico Bistolfi",
+  "license": "ISC",
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run prebuild"
+    }
+  },
+  "dependencies": {
+    "@types/aws-serverless-express": "^3.3.6",
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.13",
+    "aws-serverless-express": "^3.4.0",
+    "axios": "^0.27.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "dotenv-parse-variables": "^2.0.0",
+    "express": "^4.18.1",
+    "serverless-http": "^3.1.0",
+    "sharp": "^0.32.6",
+    "ts-node": "^10.9.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/dotenv-parse-variables": "^2.0.1",
+    "@types/sharp": "^0.30.4",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "husky": "^8.0.0",
+    "nodemon": "^2.0.19",
+    "serverless-apigw-binary": "^0.4.4",
+    "serverless-dotenv-plugin": "^4.0.2",
+    "serverless-offline": "^13.0.0",
+    "serverless-plugin-include-dependencies": "^5.0.0",
+    "serverless-plugin-typescript": "^2.1.4"
+  }
+}
