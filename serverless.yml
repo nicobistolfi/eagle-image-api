@@ -57,11 +57,32 @@ layers:
 
 resources:
   Resources:
+    CloudFrontCachePolicy:
+      Type: AWS::CloudFront::CachePolicy
+      Properties:
+        CachePolicyConfig:
+          Name: image-api-cache-policy-${self:provider.stage}
+          Comment: Cache policy for image-api
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
+          ParametersInCacheKeyAndForwardedToOrigin:
+            CookiesConfig:
+              CookieBehavior: none
+            EnableAcceptEncodingBrotli: true
+            EnableAcceptEncodingGzip: true
+            HeadersConfig:
+              HeaderBehavior: whitelist
+              Headers:
+                - Accept
+            QueryStringsConfig:
+              QueryStringBehavior: all
     CloudFrontDistribution:
       Type: AWS::CloudFront::Distribution
       Properties:
         DistributionConfig:
           Enabled: true
+          Comment: CloudFront distribution for image-api
           Origins:
             - Id: ApiGatewayOrigin
               OriginPath: "/${self:provider.stage}"
@@ -74,11 +95,23 @@ resources:
                 OriginSSLProtocols:
                   - "TLSv1.2"
           HttpVersion: http2
+          CacheBehaviors:
+            - PathPattern: /*
+              TargetOriginId: ApiGatewayOrigin
+              ViewerProtocolPolicy: redirect-to-https
+              CachePolicyId: 
+                Ref: CloudFrontCachePolicy
+              Compress: true
+              ForwardedValues:
+                QueryString: true
+                Cookies:
+                  Forward: none
           DefaultCacheBehavior:
             AllowedMethods:
               - GET
               - HEAD
             TargetOriginId: ApiGatewayOrigin
+            Compress: true
             ForwardedValues:
               QueryString: true
               Cookies:
