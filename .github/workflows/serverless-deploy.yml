@@ -56,4 +56,9 @@ jobs:
         with:
           apiKey: ${{ secrets.POSTMAN_API_KEY }}
           collection: ${{ secrets.POSTMAN_COLLECTION_ID }}
-          environment: ${{ env.POSTMAN_ENVIRONMENT }}
+          environment: |
+            if [[ "${{github.ref}}" == "refs/heads/main" ]]; then
+              echo "${{ secrets.POSTMAN_PROD_ENV }}"
+            else
+              echo "${{ secrets.POSTMAN_DEV_ENV }}"
+            fi
