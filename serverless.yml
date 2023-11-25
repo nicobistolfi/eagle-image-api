@@ -11,7 +11,7 @@ useDotenv: true
 provider:
   name: aws
   runtime: nodejs18.x
-  stage: dev
+  stage: ${opt:stage, 'dev'}
   region: us-west-1
   versionFunctions: false
   lambdaHashingVersion: 20201221

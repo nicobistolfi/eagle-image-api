@@ -15,12 +15,12 @@ if (fs.existsSync('.env')) {
 
 const {
   ENVIRONMENT = 'production',
-  API_ENDPOINT = '/api/image',
+  API_ENDPOINT = '/api/v1/image',
   PORT = 3000,
   LOSELESS = false,
   QUALITY = 80,
   FIT = 'outside',
-  LOG_LEVEL = 'info',
+  LOG_LEVEL = 'silly',
   ORIGIN_WHITELIST = '*',
   REDIRECT_ON_ERROR = false,
   AVIF = true,

@@ -2,17 +2,19 @@
 
 [![Author](https://img.shields.io/badge/author-%40nicobistolfi-blue.svg)](https://github.com/nicobistolfi)
 
-Free and open source Image Optimization & Transformation API build on Typescript using [Sharp](https://sharp.pixelplumbing.com/) and [Serverless](https://serverless.com/) ready to be deployed on AWS Lambda and Cloudfront.
+Free and open source Image Optimization & Transformation API build on Typescript using [Sharp](https://sharp.pixelplumbing.com/) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and Cloudfront.
 
 ## Getting started
 
 ### Setting up .env file
 
+First copy and rename the `.env.example` file.
+
 ```
 cp .env.example .env
 ```
 
-Change the values to your needs and use the following table to understand what each variable does.
+Then change the values to your needs. Use the following table to understand what each variable does.
 
 | Variable          | Accepted values                                    | Comments                                                 |
 | ----------------- | -------------------------------------------------- | -------------------------------------------------------- |
@@ -33,6 +35,24 @@ Change the values to your needs and use the following table to understand what e
 npm install
 serverless offline
 ```
+
+By default the API will run on port 3000. You can change it on the `.env` file by setting the `PORT` variable.
+
+You can try it by accessing the following url on your browser:
+
+```
+http://localhost:3000/dev/api/v1/image?url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg
+```
+
+The `url` query param is required and should be a valid url encoded with base64. In this case for testing purposes we are using an image hosted on S3. The original image URL is:
+
+```
+https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg
+```
+
+<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg" width="400px" alt="https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" />
+
+Photo by [Jack Seeds](https://unsplash.com/@jackseeds?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/black-hawk-on-tree-lV5Y2116NZg?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
 
 ### Deploy to AWS
 
