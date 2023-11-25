@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-
+  pull_request:
+    branches:
+      - "*" # all branches
 jobs:
   deploy:
     name: deploy
@@ -19,8 +21,10 @@ jobs:
       run: |
         if [[ "${{github.ref}}" == "refs/heads/main" ]]; then
           echo "STAGE=\"prod\"" >> $GITHUB_ENV
+          echo "POSTMAN_ENVIRONMENT=\"${{ secrets.POSTMAN_PROD_ENV }}\"" >> $GITHUB_ENV
         else
-          echo "STAGE=$(echo \"${{github.ref}}\" | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
+          echo "STAGE=\"dev\"" >> $GITHUB_ENV
+          echo "POSTMAN_ENVIRONMENT=\"${{ secrets.POSTMAN_DEV_ENV }}\"" >> $GITHUB_ENV
         fi
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
@@ -46,4 +50,4 @@ jobs:
         with:
           apiKey: ${{ secrets.POSTMAN_API_KEY }}
           collection: 22482580-c8f5d9de-1e28-4af3-aaa7-35a47629ac0c
-          environment: 22482580-0f2a9017-5f00-48d1-82df-b5bdcf7b13cb
+          environment: ${{ env.POSTMAN_ENVIRONMENT }}
