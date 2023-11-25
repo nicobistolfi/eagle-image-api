@@ -1,12 +1,9 @@
-name: Deploy & Test
+name: Deploy & Test Production
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - "*" # all branches
 jobs:
   deploy:
     name: deploy
@@ -18,12 +15,7 @@ jobs:
     - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."  
     - name: Set variables
       id: setvars
-      run: |
-        if [[ "${{github.ref}}" == "refs/heads/main" ]]; then
-          echo "STAGE=\"prod\"" >> $GITHUB_ENV
-        else
-          echo "STAGE=\"dev\"" >> $GITHUB_ENV
-        fi
+      run: echo "STAGE=\"prod\"" >> $GITHUB_ENV
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -43,22 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
-      - name: Set variables
-        id: setvars
-        run: |
-          if [[ "${{github.ref}}" == "refs/heads/main" ]]; then
-            echo "POSTMAN_ENVIRONMENT=\"${{ secrets.POSTMAN_PROD_ENV }}\"" >> $GITHUB_ENV
-          else
-            echo "POSTMAN_ENVIRONMENT=\"${{ secrets.POSTMAN_DEV_ENV }}\"" >> $GITHUB_ENV
-          fi
       - uses: actions/checkout@master
       - uses: matt-ball/newman-action@master
         with:
           apiKey: ${{ secrets.POSTMAN_API_KEY }}
           collection: ${{ secrets.POSTMAN_COLLECTION_ID }}
-          environment: |
-            if [[ "${{github.ref}}" == "refs/heads/main" ]]; then
-              echo "${{ secrets.POSTMAN_PROD_ENV }}"
-            else
-              echo "${{ secrets.POSTMAN_DEV_ENV }}"
-            fi
+          environment: ${{ secrets.POSTMAN_PROD_ENV }}
