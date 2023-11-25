@@ -1,4 +1,4 @@
-name: Deploy master branch
+name: Deploy & Test
 
 on:
   push:
@@ -49,5 +49,5 @@ jobs:
       - uses: matt-ball/newman-action@master
         with:
           apiKey: ${{ secrets.POSTMAN_API_KEY }}
-          collection: 22482580-c8f5d9de-1e28-4af3-aaa7-35a47629ac0c
+          collection: ${{ secrets.POSTMAN_COLLECTION_ID }}
           environment: ${{ env.POSTMAN_ENVIRONMENT }}
