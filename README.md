@@ -45,7 +45,7 @@ You can try it by accessing the following url on your browser:
 http://localhost:3000/dev/api/v1/image?url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg
 ```
 
-The `url` query param is required and should be a valid url encoded with base64. In this case for testing purposes we are using an image hosted on S3. The original image URL is:
+The `url` query param is required and should be a valid url encoded string. In this case for testing purposes we are using an image hosted on S3. The original image URL is:
 
 ```
 https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg
@@ -68,7 +68,7 @@ The API uses query params to transform the images. The following table shows the
 
 | Query param  | Description                                                                                              | Values                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| src          | Image url encoded with base64                                                                            | String                                                                   |
+| src          | Url that points to the original location of the image in the form of a url encoded string                | String                                                                   |
 | width        | Width                                                                                                    | Number                                                                   |
 | height       | Height                                                                                                   | Number                                                                   |
 | fit          | When both a width and height are provided, the possible methods by which the image should fit these are: | cover / contain / fill / inside / outside                                |
