@@ -1,8 +1,26 @@
 # Eagle Image API
 
 [![Author](https://img.shields.io/badge/author-%40nicobistolfi-blue.svg)](https://github.com/nicobistolfi)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+[![Postman](https://img.shields.io/badge/Postman-Run%20in%20Postman-orange)](https://god.gw.postman.com/run-collection/22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8%26entityType%3Dcollection%26workspaceId%3Dfa758360-633e-4980-857e-9500b71c1d81)
 
 Free and open source Image Optimization & Transformation API build on Typescript using [Sharp](https://sharp.pixelplumbing.com/) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and Cloudfront.
+
+## Table of contents
+
+- [Getting started](#getting-started)
+  - [Setting up .env file](#setting-up-env-file)
+  - [Run locally](#run-locally)
+  - [Deploy to AWS](#deploy-to-aws)
+  - [Run in Postman](#run-in-postman)
+- [Usage](#usage)
+  - [Usage examples](#usage-examples)
+    - [Resize](#resize)
+    - [Resize and crop with fit cover](#resize-and-crop-with-fit-cover)
+    - [Resize and crop with fit contain](#resize-and-crop-with-fit-contain)
+    - [Resize and crop with position top](#resize-and-crop-with-position-top)
+    - [Resize and crop with position and quality](#resize-and-crop-with-position-and-quality)
+    - [Lossless compression](#lossless-compression)
 
 ## Getting started
 
@@ -61,6 +79,12 @@ Photo by [Jack Seeds](https://unsplash.com/@jackseeds?utm_content=creditCopyText
 npm install
 serverless deploy --stage {your_stage}
 ```
+
+### Run in Postman
+
+To run and test the API you can use the following Postman collection
+
+[<img src="https://run.pstmn.io/button.svg" alt="Run In Postman" style="width: 128px; height: 32px;">](https://god.gw.postman.com/run-collection/22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8%26entityType%3Dcollection%26workspaceId%3Dfa758360-633e-4980-857e-9500b71c1d81)
 
 ## Usage
 

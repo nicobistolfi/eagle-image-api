@@ -19,7 +19,7 @@
     "serverless:logs": "serverless logs -f image"
   },
   "author": "Nico Bistolfi",
-  "license": "ISC",
+  "license": "MIT",
   "husky": {
     "hooks": {
       "pre-commit": "npm run prebuild"
