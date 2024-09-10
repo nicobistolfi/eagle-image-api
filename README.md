@@ -63,18 +63,19 @@ By default the API will run on port 3000. You can change it on the `.env` file b
 You can try it by accessing the following url on your browser:
 
 ```
-http://localhost:3000/dev/api/v1/image?url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg
+http://localhost:3000/dev/api/v1/image?url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg
 ```
 
 The `url` query param is required and should be a valid url encoded string. In this case for testing purposes we are using an image hosted on S3. The original image URL is:
 
 ```
-https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg
+https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg
 ```
 
-<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg" width="400px" alt="Photo by Jack Seeds on Unsplash" />
+<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg" width="400px" alt="Photo by Philipp Pilz on Unsplash" />
 
-Photo by [Jack Seeds](https://unsplash.com/@jackseeds?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/black-hawk-on-tree-lV5Y2116NZg?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+Photo by <a href="https://unsplash.com/@buchstabenhausen?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Philipp Pilz</a> on <a href="https://unsplash.com/photos/black-and-white-eagle-flying-ID48ekBTlDo?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+  
 
 ### Deploy to AWS
 
@@ -117,9 +118,9 @@ You can use the following examples to understand how to use it. Remember to repl
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with fit cover
 
@@ -127,9 +128,9 @@ You can use the following examples to understand how to use it. Remember to repl
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with fit contain
 
@@ -139,9 +140,9 @@ This will deform the image to fit the size
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=contain&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with position top
 
@@ -149,9 +150,9 @@ This will deform the image to fit the size
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with position and quality
 
@@ -161,9 +162,9 @@ For the purpose of this test we set quality=10 just to test it, normally you sho
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&quality=10&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Lossless compression
 
@@ -171,6 +172,6 @@ For the purpose of this test we set quality=10 just to test it, normally you sho
 {{API_ENDPOINT}}/api/v1/image?quality=80&lossless=true&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg" width="200px" alt="Resized image" />
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle.jpeg)
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
