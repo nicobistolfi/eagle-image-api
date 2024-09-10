@@ -72,9 +72,10 @@ The `url` query param is required and should be a valid url encoded string. In t
 https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg
 ```
 
-<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg" width="400px" alt="Photo by Jack Seeds on Unsplash" />
+<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle.jpeg" width="400px" alt="Photo by Harald Hofer on Unsplash" />
 
-Photo by [Jack Seeds](https://unsplash.com/@jackseeds?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/black-hawk-on-tree-lV5Y2116NZg?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+Photo by <a href="https://unsplash.com/@numen?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Harald Hofer</a> on <a href="https://unsplash.com/photos/shallow-focus-photography-of-bald-eagle-pKoKW6UQOuk?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+  
 
 ### Deploy to AWS
 
