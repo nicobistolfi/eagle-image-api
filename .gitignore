@@ -1,14 +1,12 @@
 *.env
 
-# Dependency directory
-node_modules
-
 # OS metadata
 .DS_Store
 Thumbs.db
 
-# Ignore built ts files
-dist/**/*
+# Go build output
+bootstrap
+vendor/
 
+# Serverless
 .serverless
-.build

@@ -1,21 +1,17 @@
 # serverless.yml
 service: image-api
 
-plugins:
-  - serverless-plugin-typescript
-  - serverless-plugin-include-dependencies
-  - serverless-dotenv-plugin
-  - serverless-offline
-useDotenv: true
-
 provider:
   name: aws
-  runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: us-west-1
   versionFunctions: false
-  lambdaHashingVersion: 20201221
   endpointType: REGIONAL
+  ecr:
+    images:
+      processing:
+        path: ./
+        file: Dockerfile
   apiGateway:
     metrics: true
     binaryMediaTypes:
@@ -27,12 +23,24 @@ provider:
   stackTags:
     Project: image-api
     Stage: ${opt:stage, 'dev'}
-    
+
 functions:
   processing:
-    handler: ./src/handler.handler
+    image:
+      name: processing
     timeout: 30
     memorySize: 2048
+    environment:
+      ENVIRONMENT: ${env:ENVIRONMENT, 'production'}
+      API_ENDPOINT: ${env:API_ENDPOINT, '/api/v1/image'}
+      QUALITY: ${env:QUALITY, '80'}
+      FIT: ${env:FIT, 'outside'}
+      LOG_LEVEL: ${env:LOG_LEVEL, 'info'}
+      ORIGIN_WHITELIST: ${env:ORIGIN_WHITELIST, '*'}
+      REDIRECT_ON_ERROR: ${env:REDIRECT_ON_ERROR, 'false'}
+      WEBP: ${env:WEBP, 'true'}
+      AVIF: ${env:AVIF, 'true'}
+      AVIF_MAX_MP: ${env:AVIF_MAX_MP, '2'}
     events:
       - http:
           path: /
@@ -44,16 +52,6 @@ functions:
           cors: true
           response:
             contentHandling: CONVERT_TO_BINARY
-
-            
-    layers:
-      - {Ref: SharpLambdaLayer}
-
-layers:
-  sharp:
-    path: node_modules/sharp
-    compatibleRuntimes:
-      - nodejs18.x
 
 resources:
   Resources:
@@ -86,7 +84,7 @@ resources:
           Origins:
             - Id: ApiGatewayOrigin
               OriginPath: "/${self:provider.stage}"
-              DomainName: 
+              DomainName:
                 Fn::Join: [".", [Ref: "ApiGatewayRestApi", "execute-api.${self:provider.region}.amazonaws.com"]]
               CustomOriginConfig:
                 HTTPPort: 80
@@ -99,7 +97,7 @@ resources:
             - PathPattern: /*
               TargetOriginId: ApiGatewayOrigin
               ViewerProtocolPolicy: redirect-to-https
-              CachePolicyId: 
+              CachePolicyId:
                 Ref: CloudFrontCachePolicy
               Compress: true
               ForwardedValues:
