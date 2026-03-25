@@ -23,6 +23,12 @@ jobs:
       - name: Copy environment variables to .env
         run: echo "${{ vars.ENV }}" >> .env
 
+      - name: Remove existing dev stack (one-time migration from Node.js to container image)
+        run: serverless remove --stage dev || true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: Deploy
         run: serverless deploy --stage dev
         env:
