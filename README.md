@@ -6,6 +6,9 @@
 
 Free and open source Image Optimization & Transformation API built in Go using [govips](https://github.com/davidbyttow/govips) (libvips) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and CloudFront.
 
+## How to deploy to AWS and Run
+[![How to deploy to AWS and Run - Watch Video](https://cdn.loom.com/sessions/thumbnails/97692855cf3947eabd45dd5e90a548ec-c333bef1399a2164-full-play.gif)](https://www.loom.com/share/97692855cf3947eabd45dd5e90a548ec)
+
 ## Table of contents
 
 - [Getting started](#getting-started)
@@ -16,6 +19,12 @@ Free and open source Image Optimization & Transformation API built in Go using [
   - [Run in Postman](#run-in-postman)
 - [Usage](#usage)
   - [Usage examples](#usage-examples)
+    - [Resize](#resize)
+    - [Resize and crop with fit cover](#resize-and-crop-with-fit-cover)
+    - [Resize and crop with fit contain](#resize-and-crop-with-fit-contain)
+    - [Resize and crop with position top](#resize-and-crop-with-position-top)
+    - [Resize and crop with position and quality](#resize-and-crop-with-position-and-quality)
+    - [Lossless compression](#lossless-compression)
 
 ## Getting started
 
@@ -60,6 +69,22 @@ make build
 make test
 ```
 
+You can try it by accessing the following url on your browser:
+
+```
+http://localhost:3000/dev/api/v1/image?url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg
+```
+
+The `url` query param is required and should be a valid url encoded string. In this case for testing purposes we are using an image hosted on S3. The original image URL is:
+
+```
+https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg
+```
+
+<img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg" width="400px" alt="Photo by Philipp Pilz on Unsplash" />
+
+Photo by <a href="https://unsplash.com/@buchstabenhausen?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Philipp Pilz</a> on <a href="https://unsplash.com/photos/black-and-white-eagle-flying-ID48ekBTlDo?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+
 ### Deploy to AWS
 
 The API is deployed as a Docker container on AWS Lambda via Serverless Framework.
@@ -103,7 +128,7 @@ The API uses query params to transform the images.
 
 ### Usage examples
 
-Replace `API_ENDPOINT` with your deployed URL.
+You can use the following examples to understand how to use it. Remember to replace the `API_ENDPOINT` with the one you set on your `.env` file.
 
 #### Resize
 
@@ -111,17 +136,31 @@ Replace `API_ENDPOINT` with your deployed URL.
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&url={{IMAGE_URL}}
 ```
 
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+
 #### Resize and crop with fit cover
 
 ```
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&url={{IMAGE_URL}}
 ```
 
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+
 #### Resize and crop with fit contain
+
+This will deform the image to fit the size
 
 ```
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=contain&url={{IMAGE_URL}}
 ```
+
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with position top
 
@@ -129,14 +168,28 @@ Replace `API_ENDPOINT` with your deployed URL.
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&url={{IMAGE_URL}}
 ```
 
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+
 #### Resize and crop with position and quality
+
+For the purpose of this test we set quality=10 just to test it, normally you should use quality between 70-90
 
 ```
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&quality=10&url={{IMAGE_URL}}
 ```
+
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Lossless compression
 
 ```
 {{API_ENDPOINT}}/api/v1/image?quality=80&lossless=true&url={{IMAGE_URL}}
 ```
+
+<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+
+[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
