@@ -7,6 +7,4 @@ Thumbs.db
 # Go build output
 bootstrap
 vendor/
-
-# Serverless
 .serverless
