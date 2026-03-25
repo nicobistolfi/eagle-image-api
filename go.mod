@@ -1,6 +1,6 @@
 module github.com/zantez/image-api
 
-go 1.25.1
+go 1.24
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0
