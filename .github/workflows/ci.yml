@@ -13,12 +13,21 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
+
+      - name: Cache libvips
+        id: cache-libvips
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/include/vips
+            /usr/lib/x86_64-linux-gnu/libvips*
+            /usr/lib/x86_64-linux-gnu/pkgconfig/vips*.pc
+          key: libvips-${{ runner.os }}-apt
 
       - name: Install libvips
+        if: steps.cache-libvips.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y libvips-dev
-
-      - name: Download dependencies
-        run: go mod download
 
       - name: Build
         run: go build ./...
