@@ -17,8 +17,8 @@ jobs:
         with:
           node-version: 20.x
 
-      - name: Install Serverless Framework
-        run: npm install -g serverless
+      - name: Install Serverless Framework v3
+        run: npm install -g serverless@3
 
       - name: Copy environment variables to .env
         run: echo "${{ vars.ENV }}" >> .env
