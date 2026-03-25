@@ -8,19 +8,19 @@ import (
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Environment    string
-	APIEndpoint    string
-	Port           int
-	Quality        int
-	Fit            string
-	LogLevel       string
+	Environment     string
+	APIEndpoint     string
+	Port            int
+	Quality         int
+	Fit             string
+	LogLevel        string
 	OriginWhitelist string
 	AllowAllOrigins bool
-	Origins        []string
+	Origins         []string
 	RedirectOnError bool
-	WebP           bool
-	AVIF           bool
-	AVIFMaxMP      float64
+	WebP            bool
+	AVIF            bool
+	AVIFMaxMP       float64
 }
 
 // Cfg is the global configuration instance.
@@ -29,17 +29,17 @@ var Cfg Config
 // Load reads environment variables and populates the global Config.
 func Load() {
 	Cfg = Config{
-		Environment:    envOrDefault("ENVIRONMENT", "production"),
-		APIEndpoint:    envOrDefault("API_ENDPOINT", "/api/v1/image"),
-		Port:           envOrDefaultInt("PORT", 3000),
-		Quality:        envOrDefaultInt("QUALITY", 80),
-		Fit:            envOrDefault("FIT", "outside"),
-		LogLevel:       envOrDefault("LOG_LEVEL", "silly"),
+		Environment:     envOrDefault("ENVIRONMENT", "production"),
+		APIEndpoint:     envOrDefault("API_ENDPOINT", "/api/v1/image"),
+		Port:            envOrDefaultInt("PORT", 3000),
+		Quality:         envOrDefaultInt("QUALITY", 80),
+		Fit:             envOrDefault("FIT", "outside"),
+		LogLevel:        envOrDefault("LOG_LEVEL", "silly"),
 		OriginWhitelist: envOrDefault("ORIGIN_WHITELIST", "*"),
 		RedirectOnError: envOrDefaultBool("REDIRECT_ON_ERROR", false),
-		WebP:           envOrDefaultBool("WEBP", true),
-		AVIF:           envOrDefaultBool("AVIF", true),
-		AVIFMaxMP:      envOrDefaultFloat("AVIF_MAX_MP", 2),
+		WebP:            envOrDefaultBool("WEBP", true),
+		AVIF:            envOrDefaultBool("AVIF", true),
+		AVIFMaxMP:       envOrDefaultFloat("AVIF_MAX_MP", 2),
 	}
 
 	if Cfg.OriginWhitelist == "*" {

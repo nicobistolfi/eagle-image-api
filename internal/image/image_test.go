@@ -8,18 +8,18 @@ import (
 
 func init() {
 	config.Cfg = config.Config{
-		Environment:    "test",
-		APIEndpoint:    "/api/v1/image",
-		Port:           3000,
-		Quality:        80,
-		Fit:            "outside",
-		LogLevel:       "error",
+		Environment:     "test",
+		APIEndpoint:     "/api/v1/image",
+		Port:            3000,
+		Quality:         80,
+		Fit:             "outside",
+		LogLevel:        "error",
 		OriginWhitelist: "*",
 		AllowAllOrigins: true,
 		RedirectOnError: false,
-		WebP:           true,
-		AVIF:           true,
-		AVIFMaxMP:      2,
+		WebP:            true,
+		AVIF:            true,
+		AVIFMaxMP:       2,
 	}
 }
 

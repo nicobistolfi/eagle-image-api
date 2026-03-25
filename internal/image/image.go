@@ -47,11 +47,11 @@ type QueryParams struct {
 // ParseQueryParams converts a map of string parameters to QueryParams.
 func ParseQueryParams(m map[string]string) QueryParams {
 	p := QueryParams{
-		URL:      m["url"],
-		Fit:      m["fit"],
-		Position: m["position"],
+		URL:        m["url"],
+		Fit:        m["fit"],
+		Position:   m["position"],
 		Background: m["background"],
-		Kernel:   m["kernel"],
+		Kernel:     m["kernel"],
 	}
 
 	if v, ok := m["width"]; ok && v != "" {
