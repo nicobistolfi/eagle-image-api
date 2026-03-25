@@ -19,6 +19,7 @@ jobs:
     name: deploy
     needs: ci
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
@@ -47,10 +48,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPO_NAME:latest
 
-      - name: Load environment variables
-        run: |
-          echo "${{ vars.ENV }}" >> $GITHUB_ENV
-
       - name: Deploy CloudFormation stack
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
@@ -63,16 +60,16 @@ jobs:
             --parameter-overrides \
               Stage=prod \
               ImageUri=$ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG \
-              Environment="${ENVIRONMENT:-production}" \
-              ApiEndpoint="${API_ENDPOINT:-/api/v1/image}" \
-              Quality="${QUALITY:-80}" \
-              Fit="${FIT:-outside}" \
-              LogLevel="${LOG_LEVEL:-info}" \
-              OriginWhitelist="${ORIGIN_WHITELIST:-*}" \
-              RedirectOnError="${REDIRECT_ON_ERROR:-false}" \
-              WebP="${WEBP:-true}" \
-              Avif="${AVIF:-true}" \
-              AvifMaxMp="${AVIF_MAX_MP:-2}" \
+              Environment="${{ vars.ENVIRONMENT }}" \
+              ApiEndpoint="${{ vars.API_ENDPOINT }}" \
+              Quality="${{ vars.QUALITY }}" \
+              Fit="${{ vars.FIT }}" \
+              LogLevel="${{ vars.LOG_LEVEL }}" \
+              OriginWhitelist="${{ vars.ORIGIN_WHITELIST }}" \
+              RedirectOnError="${{ vars.REDIRECT_ON_ERROR }}" \
+              WebP="${{ vars.WEBP }}" \
+              Avif="${{ vars.AVIF }}" \
+              AvifMaxMp="${{ vars.AVIF_MAX_MP }}" \
             --no-fail-on-empty-changeset
 
       - name: Force API Gateway redeployment
@@ -88,10 +85,11 @@ jobs:
   newman:
     runs-on: ubuntu-latest
     needs: deploy
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: matt-ball/newman-action@master
         with:
           apiKey: ${{ secrets.POSTMAN_API_KEY }}
           collection: ${{ secrets.POSTMAN_COLLECTION_ID }}
-          environment: ${{ secrets.POSTMAN_PROD_ENV }}
+          environment: ${{ secrets.POSTMAN_ENV }}
