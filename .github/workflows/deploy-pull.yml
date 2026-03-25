@@ -48,11 +48,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPO_NAME:latest
 
-      - name: Remove old Serverless stack if it exists
-        run: |
-          aws cloudformation delete-stack --stack-name $STACK_NAME 2>/dev/null || true
-          aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 2>/dev/null || true
-
       - name: Deploy CloudFormation stack
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
