@@ -12,7 +12,9 @@ func main() {
 	config.Load()
 	logger.Init(config.Cfg.LogLevel)
 
-	vips.Startup(nil)
+	if err := vips.Startup(nil); err != nil {
+		panic("failed to start vips: " + err.Error())
+	}
 	defer vips.Shutdown()
 
 	lambda.Start(handler.Handle)

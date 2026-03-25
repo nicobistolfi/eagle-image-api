@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -139,14 +140,7 @@ func (img *Image) Load() error {
 
 	if !cfg.AllowAllOrigins {
 		domain := extractDomain(img.URL)
-		allowed := false
-		for _, origin := range cfg.Origins {
-			if origin == domain {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
+		if !slices.Contains(cfg.Origins, domain) {
 			return fmt.Errorf("origin not allowed")
 		}
 	}
@@ -257,7 +251,7 @@ func (img *Image) resize(vImg *vips.ImageRef, p QueryParams) error {
 func resizeCover(vImg *vips.ImageRef, width, height int, position string) error {
 	if width == 0 || height == 0 {
 		// If only one dimension, just resize that dimension
-		scale := 1.0
+		var scale float64
 		if width > 0 {
 			scale = float64(width) / float64(vImg.Width())
 		} else {
