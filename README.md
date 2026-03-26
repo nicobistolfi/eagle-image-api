@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 [![Postman](https://img.shields.io/badge/Postman-Run%20in%20Postman-orange)](https://god.gw.postman.com/run-collection/22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8%26entityType%3Dcollection%26workspaceId%3Dfa758360-633e-4980-857e-9500b71c1d81)
 
-Free and open source Image Optimization & Transformation API build on Typescript using [Sharp](https://sharp.pixelplumbing.com/) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and Cloudfront.
+Free and open source Image Optimization & Transformation API built in Go using [govips](https://github.com/davidbyttow/govips) (libvips) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and CloudFront.
 
 ## How to deploy to AWS and Run
 [![How to deploy to AWS and Run - Watch Video](https://cdn.loom.com/sessions/thumbnails/97692855cf3947eabd45dd5e90a548ec-c333bef1399a2164-full-play.gif)](https://www.loom.com/share/97692855cf3947eabd45dd5e90a548ec)
@@ -12,6 +12,7 @@ Free and open source Image Optimization & Transformation API build on Typescript
 ## Table of contents
 
 - [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
   - [Setting up .env file](#setting-up-env-file)
   - [Run locally](#run-locally)
   - [Deploy to AWS](#deploy-to-aws)
@@ -26,6 +27,13 @@ Free and open source Image Optimization & Transformation API build on Typescript
     - [Lossless compression](#lossless-compression)
 
 ## Getting started
+
+### Prerequisites
+
+- Go 1.22+
+- libvips 8.10+ (`brew install vips` on macOS, `apt install libvips-dev` on Ubuntu)
+- Docker (for deployment)
+- Serverless Framework (`npm install -g serverless`)
 
 ### Setting up .env file
 
@@ -42,10 +50,10 @@ Then change the values to your needs. Use the following table to understand what
 | ENVIRONMENT       | production / development                           |                                                          |
 | API_ENDPOINT      | /api/v1/image                                      | the path to access the api                               |
 | PORT              | 3000                                               | The port you want it to run locally.                     |
-| LOSELESS          | false                                              | Use looseless compression                                |
 | QUALITY           | 90                                                 | Suggested between 70 and 90 depending on the use case    |
-| LOG_LEVEL         | error warn / info / http / verbose / debug / silly |                                                          |
-| ORIGIN_WHITELIST  | ['yourorigin.com']                                 | remove env to allow all origins                          |
+| FIT               | outside                                            | Default resize fit mode                                  |
+| LOG_LEVEL         | error / warn / info / debug                        |                                                          |
+| ORIGIN_WHITELIST  | yourorigin.com,other.com                           | Use * to allow all origins                               |
 | REDIRECT_ON_ERROR | false                                              | Will redirect to original image on error                 |
 | WEBP              | true/false                                         | Enables webp format if accept header includes image/webp |
 | AVIF              | true/false                                         | Enables avif format if accept header includes image/avif |
@@ -53,12 +61,13 @@ Then change the values to your needs. Use the following table to understand what
 
 ### Run locally
 
-```
-npm install
-serverless offline
-```
+```bash
+# Build
+make build
 
-By default the API will run on port 3000. You can change it on the `.env` file by setting the `PORT` variable.
+# Run tests
+make test
+```
 
 You can try it by accessing the following url on your browser:
 
@@ -75,13 +84,17 @@ https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg
 <img src="https://eagle-image-test.s3.us-west-1.amazonaws.com/public/eagle-2.jpg" width="400px" alt="Photo by Philipp Pilz on Unsplash" />
 
 Photo by <a href="https://unsplash.com/@buchstabenhausen?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Philipp Pilz</a> on <a href="https://unsplash.com/photos/black-and-white-eagle-flying-ID48ekBTlDo?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
-  
 
 ### Deploy to AWS
 
-```
-npm install
-serverless deploy --stage {your_stage}
+The API is deployed as a Docker container on AWS Lambda via Serverless Framework.
+
+```bash
+# Deploy to dev
+make deploy-dev
+
+# Deploy to production
+make deploy-prod
 ```
 
 ### Run in Postman
@@ -92,21 +105,26 @@ To run and test the API you can use the following Postman collection
 
 ## Usage
 
-The API uses query params to transform the images. The following table shows the available options. More information on how the transformations work can be found on [Sharp's Documentation](https://sharp.pixelplumbing.com/).
+The API uses query params to transform the images.
 
 | Query param  | Description                                                                                              | Values                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| src          | Url that points to the original location of the image in the form of a url encoded string                | String                                                                   |
+| url          | URL that points to the original location of the image (URL-encoded)                                      | String (required)                                                        |
 | width        | Width                                                                                                    | Number                                                                   |
 | height       | Height                                                                                                   | Number                                                                   |
 | fit          | When both a width and height are provided, the possible methods by which the image should fit these are: | cover / contain / fill / inside / outside                                |
 | position     | When using a fit of cover or contain, the default position is centre. Other options are:                 | top, right top, right, right bottom, bottom, left bottom, left, left top |
 | quality      | Quality                                                                                                  | Number (0-100)                                                           |
-| lossless     | use lossless compression mode                                                                            | Boolean                                                                  |
-| effort       | CPU effort, between 0 (fastest) and 6 (slowest)                                                          | Number (0-6)                                                             |
-| alphaQuality | quality of alpha layer, integer 0-100                                                                    | Number (0-100)                                                           |
-| loop         | GIF number of animation iterations, use 0 for infinite animation                                         | Number                                                                   |
-| delay        | GIF delay(s) between animation frames (in milliseconds)                                                  | Number                                                                   |
+| lossless     | Use lossless compression mode                                                                            | Boolean                                                                  |
+| blur         | Gaussian blur                                                                                            | Number (0-100)                                                           |
+| sharpen      | Sharpen                                                                                                  | Number (1-100)                                                           |
+| flip         | Flip vertically                                                                                          | Boolean                                                                  |
+| flop         | Flip horizontally                                                                                        | Boolean                                                                  |
+| rotate       | Rotate by angle                                                                                          | Number (degrees)                                                         |
+| webpEffort   | WebP compression effort                                                                                  | Number (0-6)                                                             |
+| alphaQuality | Quality of alpha layer                                                                                   | Number (0-100)                                                           |
+| loop         | GIF number of animation iterations, use 0 for infinite                                                   | Number                                                                   |
+| delay        | GIF delay between frames (in milliseconds)                                                               | Number                                                                   |
 
 ### Usage examples
 

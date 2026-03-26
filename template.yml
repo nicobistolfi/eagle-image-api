@@ -1,0 +1,314 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Eagle Image API - Go-based image optimization service on Lambda
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  ImageUri:
+    Type: String
+    Description: ECR image URI for the Lambda function
+  Environment:
+    Type: String
+    Default: production
+  ApiEndpoint:
+    Type: String
+    Default: /api/v1/image
+  Quality:
+    Type: String
+    Default: '80'
+  Fit:
+    Type: String
+    Default: outside
+  LogLevel:
+    Type: String
+    Default: info
+  OriginWhitelist:
+    Type: String
+    Default: '*'
+  RedirectOnError:
+    Type: String
+    Default: 'false'
+  WebP:
+    Type: String
+    Default: 'true'
+  Avif:
+    Type: String
+    Default: 'true'
+  AvifMaxMp:
+    Type: String
+    Default: '2'
+
+Resources:
+  # IAM
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub image-api-${Stage}-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: Project
+          Value: image-api
+        - Key: Stage
+          Value: !Ref Stage
+
+  # Lambda
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub image-api-${Stage}-processing
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 2048
+      Timeout: 30
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          API_ENDPOINT: !Ref ApiEndpoint
+          QUALITY: !Ref Quality
+          FIT: !Ref Fit
+          LOG_LEVEL: !Ref LogLevel
+          ORIGIN_WHITELIST: !Ref OriginWhitelist
+          REDIRECT_ON_ERROR: !Ref RedirectOnError
+          WEBP: !Ref WebP
+          AVIF: !Ref Avif
+          AVIF_MAX_MP: !Ref AvifMaxMp
+      Tags:
+        - Key: Project
+          Value: image-api
+        - Key: Stage
+          Value: !Ref Stage
+
+  LambdaApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/*
+
+  # API Gateway
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub image-api-${Stage}
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+
+  ApiGatewayRootMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        ContentHandling: CONVERT_TO_BINARY
+
+  ApiGatewayRootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Accept'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  ApiGatewayProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: "{proxy+}"
+
+  ApiGatewayProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ApiGatewayProxyResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        ContentHandling: CONVERT_TO_BINARY
+
+  ApiGatewayProxyOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ApiGatewayProxyResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Accept'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ApiGatewayRootMethod
+      - ApiGatewayRootOptionsMethod
+      - ApiGatewayProxyMethod
+      - ApiGatewayProxyOptionsMethod
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      DeploymentId: !Ref ApiGatewayDeployment
+      StageName: !Ref Stage
+      MethodSettings:
+        - HttpMethod: '*'
+          ResourcePath: /*
+          MetricsEnabled: true
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/image-api-${Stage}
+      RetentionInDays: 30
+
+  # Gateway Responses (security headers)
+  GatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        gatewayresponse.header.Strict-Transport-Security: "'max-age=31536000; includeSubdomains; preload'"
+        gatewayresponse.header.X-Content-Type-Options: "'nosniff'"
+        gatewayresponse.header.X-Frame-Options: "'DENY'"
+        gatewayresponse.header.X-XSS-Protection: "'1; mode=block'"
+        gatewayresponse.header.Referrer-Policy: "'same-origin'"
+        gatewayresponse.header.Content-Security-Policy: "'default-src 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'"
+
+  GatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        gatewayresponse.header.Strict-Transport-Security: "'max-age=31536000; includeSubdomains; preload'"
+        gatewayresponse.header.X-Content-Type-Options: "'nosniff'"
+        gatewayresponse.header.X-Frame-Options: "'DENY'"
+        gatewayresponse.header.X-XSS-Protection: "'1; mode=block'"
+        gatewayresponse.header.Referrer-Policy: "'same-origin'"
+        gatewayresponse.header.Content-Security-Policy: "'default-src 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'"
+
+  # CloudFront
+  CloudFrontCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub image-api-cache-policy-${Stage}
+        Comment: Cache policy for image-api
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 0
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Accept
+          QueryStringsConfig:
+            QueryStringBehavior: all
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub CloudFront distribution for image-api (${Stage})
+        HttpVersion: http2
+        Origins:
+          - Id: ApiGatewayOrigin
+            DomainName: !Sub ${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com
+            OriginPath: !Sub /${Stage}
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: ApiGatewayOrigin
+          CachePolicyId: !Ref CloudFrontCachePolicy
+          Compress: true
+          ViewerProtocolPolicy: redirect-to-https
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
+  CloudFrontUrl:
+    Description: CloudFront distribution URL
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+  ApiGatewayRestApiId:
+    Value: !Ref ApiGatewayRestApi
