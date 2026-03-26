@@ -17,6 +17,7 @@ import (
 )
 
 // ErrOriginNotAllowed is returned when the image URL domain is not in the whitelist.
+//
 //lint:ignore ST1005 API contract requires capitalized error message
 var ErrOriginNotAllowed = errors.New("Origin not allowed") //nolint:stylecheck
 
