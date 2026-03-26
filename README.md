@@ -30,6 +30,53 @@ Free and open source Image Optimization & Transformation API built in Go using [
     - [Resize and crop with position and quality](#resize-and-crop-with-position-and-quality)
     - [Lossless compression](#lossless-compression)
 
+## Eagle CLI
+
+The `eagle` CLI lets you deploy the Eagle Image API to your own AWS account with a single command.
+
+### Install via Homebrew
+
+```bash
+brew install nicobistolfi/carbon/eagle
+```
+
+### Install via Go
+
+```bash
+go install github.com/nicobistolfi/eagle-image-api/cmd/eagle@latest
+```
+
+### Usage
+
+```bash
+# Deploy to AWS (dev stage, us-west-1)
+eagle deploy
+
+# Deploy to production in a specific region
+eagle deploy --stage prod --region us-east-1
+
+# Deploy with custom parameters
+eagle deploy --stage dev --quality 90 --webp true --avif true
+
+# Use a local CloudFormation template
+eagle deploy --template ./template.yml
+
+# Show version
+eagle --version
+
+# Show help
+eagle deploy --help
+```
+
+The `deploy` command will:
+1. Fetch the CloudFormation template from GitHub (or use a local `--template`)
+2. Create an ECR repository in your AWS account if needed
+3. Pull the public Docker Hub image and push it to your ECR
+4. Create or update the CloudFormation stack
+5. Print the API Gateway and CloudFront URLs on success
+
+AWS credentials are read from the standard credential chain (environment variables, `~/.aws/credentials`, IAM role).
+
 ## Getting started
 
 ### Prerequisites
