@@ -2,6 +2,7 @@ package image
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +15,10 @@ import (
 	"github.com/zantez/image-api/internal/config"
 	"github.com/zantez/image-api/internal/logger"
 )
+
+// ErrOriginNotAllowed is returned when the image URL domain is not in the whitelist.
+//lint:ignore ST1005 API contract requires capitalized error message
+var ErrOriginNotAllowed = errors.New("Origin not allowed") //nolint:stylecheck
 
 var defaultHeaders = map[string]string{
 	"User-Agent":                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
@@ -141,7 +146,7 @@ func (img *Image) Load() error {
 	if !cfg.AllowAllOrigins {
 		domain := extractDomain(img.URL)
 		if !slices.Contains(cfg.Origins, domain) {
-			return fmt.Errorf("Origin not allowed")
+			return ErrOriginNotAllowed
 		}
 	}
 
