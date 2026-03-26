@@ -2,6 +2,10 @@
 
 [![Author](https://img.shields.io/badge/author-%40nicobistolfi-blue.svg)](https://github.com/nicobistolfi)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Go Version](https://img.shields.io/github/go-mod/go-version/nicobistolfi/eagle-image-api)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nicobistolfi/eagle-image-api)](https://goreportcard.com/report/github.com/nicobistolfi/eagle-image-api)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nicobistolfi/eagle-image-api.svg)](https://pkg.go.dev/github.com/nicobistolfi/eagle-image-api)
+[![Build Status](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml/badge.svg)](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml)
 [![Postman](https://img.shields.io/badge/Postman-Run%20in%20Postman-orange)](https://god.gw.postman.com/run-collection/22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8%26entityType%3Dcollection%26workspaceId%3Dfa758360-633e-4980-857e-9500b71c1d81)
 
 Free and open source Image Optimization & Transformation API built in Go using [govips](https://github.com/davidbyttow/govips) (libvips) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and CloudFront.
