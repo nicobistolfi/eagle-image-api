@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build Lambda bootstrap binary for Linux amd64
+    cmds:
+      - CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -ldflags="-s -w" -o bootstrap main.go
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -f bootstrap
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  dev:
+    desc: Run the application locally
+    cmds:
+      - go run main.go
+
+  docker-build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t image-api:latest .

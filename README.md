@@ -32,6 +32,7 @@ Free and open source Image Optimization & Transformation API built in Go using [
 
 - Go 1.22+
 - libvips 8.10+ (`brew install vips` on macOS, `apt install libvips-dev` on Ubuntu)
+- [Task](https://taskfile.dev/) (`go install github.com/go-task/task/v3/cmd/task@latest` or `brew install go-task`)
 - Docker (for deployment)
 - Serverless Framework (`npm install -g serverless`)
 
@@ -63,10 +64,16 @@ Then change the values to your needs. Use the following table to understand what
 
 ```bash
 # Build
-make build
+task build
 
 # Run tests
-make test
+task test
+
+# Run locally
+task dev
+
+# List all available tasks
+task
 ```
 
 You can try it by accessing the following url on your browser:
@@ -90,11 +97,11 @@ Photo by <a href="https://unsplash.com/@buchstabenhausen?utm_content=creditCopyT
 The API is deployed as a Docker container on AWS Lambda via Serverless Framework.
 
 ```bash
-# Deploy to dev
-make deploy-dev
+# Deploy to dev (via Serverless Framework)
+sls deploy --stage dev
 
-# Deploy to production
-make deploy-prod
+# Deploy to production (via Serverless Framework)
+sls deploy --stage production
 ```
 
 ### Run in Postman
