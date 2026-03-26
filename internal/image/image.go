@@ -141,7 +141,7 @@ func (img *Image) Load() error {
 	if !cfg.AllowAllOrigins {
 		domain := extractDomain(img.URL)
 		if !slices.Contains(cfg.Origins, domain) {
-			return fmt.Errorf("origin not allowed")
+			return fmt.Errorf("Origin not allowed")
 		}
 	}
 
