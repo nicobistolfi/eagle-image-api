@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("eagle %s (commit: %s, built: %s)\n", version, commit, date)
 			return
 		}
-		cmd.Help()
+		_ = cmd.Help()
 	},
 }
 

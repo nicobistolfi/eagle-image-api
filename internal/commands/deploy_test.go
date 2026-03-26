@@ -85,7 +85,7 @@ func TestGetTemplateBody_RemoteFetch(t *testing.T) {
 	expected := "AWSTemplateFormatVersion: '2010-09-09'\nDescription: Remote template"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(expected))
+		_, _ = w.Write([]byte(expected))
 	}))
 	defer server.Close()
 
