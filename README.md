@@ -136,9 +136,9 @@ You can use the following examples to understand how to use it. Remember to repl
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with fit cover
 
@@ -146,9 +146,9 @@ You can use the following examples to understand how to use it. Remember to repl
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with fit contain
 
@@ -158,9 +158,9 @@ This will deform the image to fit the size
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=contain&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?fit=contain&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with position top
 
@@ -168,9 +168,9 @@ This will deform the image to fit the size
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Resize and crop with position and quality
 
@@ -180,9 +180,9 @@ For the purpose of this test we set quality=10 just to test it, normally you sho
 {{API_ENDPOINT}}/api/v1/image?width=400&height=400&fit=cover&position=top&quality=10&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?quality=10&position=top&fit=cover&width=400&height=400&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
 
 #### Lossless compression
 
@@ -190,6 +190,6 @@ For the purpose of this test we set quality=10 just to test it, normally you sho
 {{API_ENDPOINT}}/api/v1/image?quality=80&lossless=true&url={{IMAGE_URL}}
 ```
 
-<img src="https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
+<img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
-[View original api response here](https://d3kbkk2pyl9ybg.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+[View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
