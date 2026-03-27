@@ -1,0 +1,47 @@
+version: 2
+
+builds:
+  - main: ./cmd/eagle/
+    binary: eagle
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X "main.version={{.Version}}" -X "main.commit={{.Commit}}" -X "main.date={{.Date}}"
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+brews:
+  - name: eagle
+    homepage: https://github.com/nicobistolfi/eagle-image-api
+    description: Eagle Image Optimization API CLI
+    license: MIT
+    install: bin.install "eagle"
+    directory: Formula
+    repository:
+      owner: nicobistolfi
+      name: homebrew-carbon
+      branch: main
+      token: "{{ .Env.HOMEBREW_GITHUB_API_TOKEN }}"
+    commit_author:
+      name: nicobistolfi
+      email: git@bistol.fi
+    test: |
+      system "#{bin}/eagle --version"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
