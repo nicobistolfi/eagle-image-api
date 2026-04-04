@@ -1,6 +1,6 @@
 module github.com/zantez/image-api
 
-go 1.24
+go 1.25.0
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0
@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.13
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.9
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.56.2
-	github.com/davidbyttow/govips/v2 v2.17.0
+	github.com/davidbyttow/govips/v2 v2.18.0
 	github.com/spf13/cobra v1.10.2
 )
 
@@ -27,7 +27,7 @@ require (
 	github.com/aws/smithy-go v1.24.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	golang.org/x/image v0.18.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/image v0.38.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 )
