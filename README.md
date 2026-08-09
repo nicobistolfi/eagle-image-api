@@ -1,9 +1,9 @@
 # Eagle Image API
 
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go#images)
 [![Author](https://img.shields.io/badge/author-%40nicobistolfi-blue.svg)](https://github.com/nicobistolfi)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/nicobistolfi/eagle-image-api)
-[![Go Report Card](https://goreportcard.com/badge/github.com/nicobistolfi/eagle-image-api)](https://goreportcard.com/report/github.com/nicobistolfi/eagle-image-api)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nicobistolfi/eagle-image-api.svg)](https://pkg.go.dev/github.com/nicobistolfi/eagle-image-api)
 [![Build Status](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml/badge.svg)](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/nicobistolfi/eagle-image-api/branch/main/graph/badge.svg)](https://codecov.io/gh/nicobistolfi/eagle-image-api)
