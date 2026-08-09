@@ -6,9 +6,10 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/nicobistolfi/eagle-image-api)](https://goreportcard.com/report/github.com/nicobistolfi/eagle-image-api)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nicobistolfi/eagle-image-api.svg)](https://pkg.go.dev/github.com/nicobistolfi/eagle-image-api)
 [![Build Status](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml/badge.svg)](https://github.com/nicobistolfi/eagle-image-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/nicobistolfi/eagle-image-api/branch/main/graph/badge.svg)](https://codecov.io/gh/nicobistolfi/eagle-image-api)
 [![Postman](https://img.shields.io/badge/Postman-Run%20in%20Postman-orange)](https://god.gw.postman.com/run-collection/22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D22482580-83154c76-0cda-4385-848b-bdaa0bef7fb8%26entityType%3Dcollection%26workspaceId%3Dfa758360-633e-4980-857e-9500b71c1d81)
 
-Free and open source Image Optimization & Transformation API built in Go using [govips](https://github.com/davidbyttow/govips) (libvips) and [Serverless](https://serverless.com/). Ready to be deployed on AWS Lambda and CloudFront.
+Free and open source Image Optimization & Transformation API built in Go using [govips](https://github.com/davidbyttow/govips) (libvips) and AWS CloudFormation. Ready to be deployed on AWS Lambda and CloudFront.
 
 ## How to deploy to AWS and Run
 [![How to deploy to AWS and Run - Watch Video](https://cdn.loom.com/sessions/thumbnails/97692855cf3947eabd45dd5e90a548ec-c333bef1399a2164-full-play.gif)](https://www.loom.com/share/97692855cf3947eabd45dd5e90a548ec)
@@ -29,6 +30,8 @@ Free and open source Image Optimization & Transformation API built in Go using [
     - [Resize and crop with position top](#resize-and-crop-with-position-top)
     - [Resize and crop with position and quality](#resize-and-crop-with-position-and-quality)
     - [Lossless compression](#lossless-compression)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Eagle CLI
 
@@ -81,11 +84,11 @@ AWS credentials are read from the standard credential chain (environment variabl
 
 ### Prerequisites
 
-- Go 1.22+
-- libvips 8.10+ (`brew install vips` on macOS, `apt install libvips-dev` on Ubuntu)
+- Go 1.25+
+- libvips 8.10+ (`brew install vips pkg-config` on macOS, `apt install libvips-dev pkg-config` on Ubuntu)
 - [Task](https://taskfile.dev/) (`go install github.com/go-task/task/v3/cmd/task@latest` or `brew install go-task`)
 - Docker (for deployment)
-- Serverless Framework (`npm install -g serverless`)
+- AWS credentials with permission to manage CloudFormation, ECR, Lambda, API Gateway, and CloudFront (for deployment)
 
 ### Setting up .env file
 
@@ -145,15 +148,30 @@ Photo by <a href="https://unsplash.com/@buchstabenhausen?utm_content=creditCopyT
 
 ### Deploy to AWS
 
-The API is deployed as a Docker container on AWS Lambda via Serverless Framework.
+The API runs as a Docker container on AWS Lambda, fronted by API Gateway and
+CloudFront. The whole stack is described in [`template.yml`](template.yml) and
+deployed with the `eagle` CLI:
 
 ```bash
-# Deploy to dev (via Serverless Framework)
-sls deploy --stage dev
+# Deploy to dev
+eagle deploy --stage dev
 
-# Deploy to production (via Serverless Framework)
-sls deploy --stage production
+# Deploy to production
+eagle deploy --stage prod
 ```
+
+To deploy the template directly instead of using the CLI:
+
+```bash
+aws cloudformation deploy \
+  --template-file template.yml \
+  --stack-name eagle-image-api-dev \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides Stage=dev ImageUri=<your-ecr-image-uri>
+```
+
+Pushes to `main` deploy production automatically through
+[`.github/workflows/deploy-main.yml`](.github/workflows/deploy-main.yml).
 
 ### Run in Postman
 
@@ -251,3 +269,33 @@ For the purpose of this test we set quality=10 just to test it, normally you sho
 <img src="https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg" width="200px" alt="Resized image" />
 
 [View original api response here](https://d2xjbqad0ryx9j.cloudfront.net/api/v1/image?width=400&quality=80&loseless=true&url=https%3A%2F%2Feagle-image-test.s3.us-west-1.amazonaws.com%2Fpublic%2Feagle-2.jpg)
+
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setting up
+a development environment (libvips and cgo are required), the checks a change
+needs to pass, and how pull requests are reviewed.
+
+Building the project needs libvips installed locally:
+
+```bash
+# macOS
+brew install vips pkg-config
+
+# Debian / Ubuntu
+sudo apt-get install -y libvips-dev pkg-config
+```
+
+Then:
+
+```bash
+go build ./...
+go test -race ./...
+```
+
+For a security vulnerability, please follow [SECURITY.md](SECURITY.md) rather
+than opening a public issue.
+
+## License
+
+Released under the [MIT License](LICENSE).

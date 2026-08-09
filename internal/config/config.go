@@ -1,3 +1,9 @@
+// Package config loads the Eagle Image API runtime settings from environment
+// variables.
+//
+// Every setting has a default, so the service starts with no environment set
+// at all. Values that fail to parse fall back to their default rather than
+// aborting startup: a malformed QUALITY should not take the service down.
 package config
 
 import (
@@ -6,29 +12,52 @@ import (
 	"strings"
 )
 
-// Config holds all application configuration loaded from environment variables.
+// Config holds all application configuration loaded from environment
+// variables. See [FromEnv] for the variable names and defaults.
 type Config struct {
-	Environment     string
-	APIEndpoint     string
-	Port            int
-	Quality         int
-	Fit             string
-	LogLevel        string
+	// Environment names the deployment, e.g. "production" or "development".
+	Environment string
+	// APIEndpoint is the request path that serves image transformations.
+	APIEndpoint string
+	// Port is the TCP port used when running outside AWS Lambda.
+	Port int
+	// Quality is the default output quality, 0-100, for lossy encoders.
+	Quality int
+	// Fit is the default resize mode when a request omits the fit parameter.
+	Fit string
+	// LogLevel is the verbosity passed to the logger package.
+	LogLevel string
+	// OriginWhitelist is the raw comma-separated allowlist, or "*" for any.
 	OriginWhitelist string
+	// AllowAllOrigins reports whether OriginWhitelist was "*".
 	AllowAllOrigins bool
-	Origins         []string
+	// Origins holds the parsed, trimmed allowlist. Empty when AllowAllOrigins.
+	Origins []string
+	// RedirectOnError sends a 302 to the source image instead of an error.
 	RedirectOnError bool
-	WebP            bool
-	AVIF            bool
-	AVIFMaxMP       float64
+	// WebP enables WebP output for clients that accept it.
+	WebP bool
+	// AVIF enables AVIF output for clients that accept it.
+	AVIF bool
+	// AVIFMaxMP caps the megapixel area eligible for AVIF encoding, which is
+	// slow enough on large images to risk a Lambda timeout.
+	AVIFMaxMP float64
 }
 
-// Cfg is the global configuration instance.
+// Cfg is the global configuration instance populated by [Load].
 var Cfg Config
 
-// Load reads environment variables and populates the global Config.
-func Load() {
-	Cfg = Config{
+// FromEnv builds a Config from the process environment.
+//
+// The variables read, with their defaults, are: ENVIRONMENT (production),
+// API_ENDPOINT (/api/v1/image), PORT (3000), QUALITY (80), FIT (outside),
+// LOG_LEVEL (silly), ORIGIN_WHITELIST (*), REDIRECT_ON_ERROR (false),
+// WEBP (true), AVIF (true), and AVIF_MAX_MP (2).
+//
+// ORIGIN_WHITELIST accepts "*" to allow every origin, or a comma-separated
+// list of hostnames; surrounding whitespace on each entry is trimmed.
+func FromEnv() Config {
+	c := Config{
 		Environment:     envOrDefault("ENVIRONMENT", "production"),
 		APIEndpoint:     envOrDefault("API_ENDPOINT", "/api/v1/image"),
 		Port:            envOrDefaultInt("PORT", 3000),
@@ -42,14 +71,21 @@ func Load() {
 		AVIFMaxMP:       envOrDefaultFloat("AVIF_MAX_MP", 2),
 	}
 
-	if Cfg.OriginWhitelist == "*" {
-		Cfg.AllowAllOrigins = true
+	if c.OriginWhitelist == "*" {
+		c.AllowAllOrigins = true
 	} else {
-		Cfg.Origins = strings.Split(Cfg.OriginWhitelist, ",")
-		for i := range Cfg.Origins {
-			Cfg.Origins[i] = strings.TrimSpace(Cfg.Origins[i])
+		c.Origins = strings.Split(c.OriginWhitelist, ",")
+		for i := range c.Origins {
+			c.Origins[i] = strings.TrimSpace(c.Origins[i])
 		}
 	}
+
+	return c
+}
+
+// Load reads the environment and stores the result in the global [Cfg].
+func Load() {
+	Cfg = FromEnv()
 }
 
 func envOrDefault(key, fallback string) string {

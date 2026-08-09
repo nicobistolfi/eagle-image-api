@@ -21,11 +21,52 @@ import (
 )
 
 const (
-	defaultTemplateURL = "https://raw.githubusercontent.com/nicobistolfi/eagle-image-api/main/template.yml"
-	dockerHubImage     = "nicobistolfi/eagle-image-api:latest"
-	ecrRepoName        = "eagle-image-api"
+	// DefaultTemplateURL is where the CloudFormation template is fetched from
+	// when --template is not supplied.
+	DefaultTemplateURL = "https://raw.githubusercontent.com/nicobistolfi/eagle-image-api/main/template.yml"
+
+	// DockerHubRepo is the published image repository mirrored into the
+	// user's own ECR registry before deployment.
+	DockerHubRepo = "nicobistolfi/eagle-image-api"
+
+	// ECRRepoName is the repository created in the target AWS account.
+	ECRRepoName = "eagle-image-api"
+
+	// stackPollInterval is how long to wait between stack status checks.
+	stackPollInterval = 10 * time.Second
 )
 
+// templateURL and templateClient are variables rather than constants so tests
+// can point the fetch at a local server.
+var (
+	templateURL    = DefaultTemplateURL
+	templateClient = &http.Client{Timeout: 30 * time.Second}
+)
+
+// ecrAPI is the subset of the ECR client the deploy command uses. Depending on
+// an interface rather than *ecr.Client keeps the deployment logic testable
+// without AWS credentials.
+type ecrAPI interface {
+	DescribeRepositories(ctx context.Context, in *ecr.DescribeRepositoriesInput, opts ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error)
+	CreateRepository(ctx context.Context, in *ecr.CreateRepositoryInput, opts ...func(*ecr.Options)) (*ecr.CreateRepositoryOutput, error)
+	GetAuthorizationToken(ctx context.Context, in *ecr.GetAuthorizationTokenInput, opts ...func(*ecr.Options)) (*ecr.GetAuthorizationTokenOutput, error)
+}
+
+// cfnAPI is the subset of the CloudFormation client the deploy command uses.
+type cfnAPI interface {
+	DescribeStacks(ctx context.Context, in *cloudformation.DescribeStacksInput, opts ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error)
+	CreateStack(ctx context.Context, in *cloudformation.CreateStackInput, opts ...func(*cloudformation.Options)) (*cloudformation.CreateStackOutput, error)
+	UpdateStack(ctx context.Context, in *cloudformation.UpdateStackInput, opts ...func(*cloudformation.Options)) (*cloudformation.UpdateStackOutput, error)
+}
+
+// dockerRunner executes a docker subcommand. The stdin argument, when
+// non-empty, is piped to the process — used to feed the ECR password to
+// `docker login --password-stdin` so it never appears in the process list.
+type dockerRunner func(stdin string, args ...string) error
+
+// deployFlags mirrors the command line flags of the deploy command. Every
+// value is a string because it is forwarded verbatim as a CloudFormation
+// parameter, which is string-typed.
 type deployFlags struct {
 	stage           string
 	region          string
@@ -45,6 +86,18 @@ type deployFlags struct {
 
 var flags deployFlags
 
+// deployer carries the collaborators a deployment needs. Tests construct one
+// with fakes; runDeploy builds one backed by the real AWS SDK clients.
+type deployer struct {
+	ecr    ecrAPI
+	cfn    cfnAPI
+	docker dockerRunner
+	out    io.Writer
+	sleep  func(time.Duration)
+	flags  deployFlags
+}
+
+// DeployCmd deploys the Eagle Image API to AWS via CloudFormation.
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy Eagle Image API to AWS",
@@ -55,63 +108,89 @@ pushes the Docker Hub image to your ECR, and deploys the stack.
 
 AWS credentials are read from the standard AWS credential chain
 (environment variables, ~/.aws/credentials, IAM role).`,
-	RunE: runDeploy,
+	RunE:         runDeploy,
+	SilenceUsage: true,
 }
 
 func init() {
-	f := DeployCmd.Flags()
-	f.StringVar(&flags.stage, "stage", "dev", "Deployment stage (sets Stage parameter and stack name)")
-	f.StringVar(&flags.region, "region", "us-west-1", "AWS region")
-	f.StringVar(&flags.template, "template", "", "Path to local CloudFormation template (default: fetched from GitHub)")
-	f.StringVar(&flags.quality, "quality", "80", "Image quality (0-100)")
-	f.StringVar(&flags.fit, "fit", "outside", "Default resize fit mode")
-	f.StringVar(&flags.logLevel, "log-level", "info", "Log level (error/warn/info/debug)")
-	f.StringVar(&flags.originWhitelist, "origin-whitelist", "*", "Comma-separated origin whitelist")
-	f.StringVar(&flags.redirectOnError, "redirect-on-error", "false", "Redirect to original image on error")
-	f.StringVar(&flags.webp, "webp", "true", "Enable WebP format")
-	f.StringVar(&flags.avif, "avif", "true", "Enable AVIF format")
-	f.StringVar(&flags.avifMaxMp, "avif-max-mp", "2", "Maximum megapixels for AVIF output")
-	f.StringVar(&flags.environment, "environment", "production", "Environment name")
-	f.StringVar(&flags.apiEndpoint, "api-endpoint", "/api/v1/image", "API endpoint path")
-	f.StringVar(&flags.imageTag, "image-tag", "latest", "Docker Hub image tag to deploy")
+	registerDeployFlags(DeployCmd, &flags)
 }
 
-func runDeploy(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
+// registerDeployFlags binds every deploy flag to dst. It is split out from
+// init so tests can build an independent command with its own flag storage.
+func registerDeployFlags(cmd *cobra.Command, dst *deployFlags) {
+	f := cmd.Flags()
+	f.StringVar(&dst.stage, "stage", "dev", "Deployment stage (sets Stage parameter and stack name)")
+	f.StringVar(&dst.region, "region", "us-west-1", "AWS region")
+	f.StringVar(&dst.template, "template", "", "Path to local CloudFormation template (default: fetched from GitHub)")
+	f.StringVar(&dst.quality, "quality", "80", "Image quality (0-100)")
+	f.StringVar(&dst.fit, "fit", "outside", "Default resize fit mode")
+	f.StringVar(&dst.logLevel, "log-level", "info", "Log level (error/warn/info/debug)")
+	f.StringVar(&dst.originWhitelist, "origin-whitelist", "*", "Comma-separated origin whitelist")
+	f.StringVar(&dst.redirectOnError, "redirect-on-error", "false", "Redirect to original image on error")
+	f.StringVar(&dst.webp, "webp", "true", "Enable WebP format")
+	f.StringVar(&dst.avif, "avif", "true", "Enable AVIF format")
+	f.StringVar(&dst.avifMaxMp, "avif-max-mp", "2", "Maximum megapixels for AVIF output")
+	f.StringVar(&dst.environment, "environment", "production", "Environment name")
+	f.StringVar(&dst.apiEndpoint, "api-endpoint", "/api/v1/image", "API endpoint path")
+	f.StringVar(&dst.imageTag, "image-tag", "latest", "Docker Hub image tag to deploy")
+}
 
-	// Load AWS config
+func runDeploy(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(flags.region))
 	if err != nil {
 		return fmt.Errorf("loading AWS config: %w", err)
 	}
 
-	// Get CloudFormation template body
-	templateBody, err := getTemplateBody(flags.template)
+	d := &deployer{
+		ecr:    ecr.NewFromConfig(cfg),
+		cfn:    cloudformation.NewFromConfig(cfg),
+		docker: runDockerCmd,
+		out:    cmd.OutOrStdout(),
+		sleep:  time.Sleep,
+		flags:  flags,
+	}
+
+	return d.run(ctx)
+}
+
+// run performs the full deployment: fetch template, mirror the image into
+// ECR, then create or update the CloudFormation stack.
+func (d *deployer) run(ctx context.Context) error {
+	templateBody, err := getTemplateBody(d.flags.template)
 	if err != nil {
 		return fmt.Errorf("getting template: %w", err)
 	}
 
-	// Set up ECR and push image
-	fmt.Println("Setting up ECR repository...")
-	imageURI, err := setupECRAndPushImage(ctx, cfg)
+	fmt.Fprintln(d.out, "Setting up ECR repository...")
+	imageURI, err := d.setupECRAndPushImage(ctx)
 	if err != nil {
 		return fmt.Errorf("setting up ECR image: %w", err)
 	}
-	fmt.Printf("Image pushed to: %s\n", imageURI)
+	fmt.Fprintf(d.out, "Image pushed to: %s\n", imageURI)
 
-	// Deploy CloudFormation stack
-	stackName := fmt.Sprintf("eagle-image-api-%s", flags.stage)
-	fmt.Printf("Deploying stack %q in %s...\n", stackName, flags.region)
+	name := stackName(d.flags.stage)
+	fmt.Fprintf(d.out, "Deploying stack %q in %s...\n", name, d.flags.region)
 
-	err = deployStack(ctx, cfg, stackName, templateBody, imageURI)
-	if err != nil {
+	if err := d.deployStack(ctx, name, templateBody, imageURI); err != nil {
 		return fmt.Errorf("deploying stack: %w", err)
 	}
 
-	// Print outputs
-	return printStackOutputs(ctx, cfg, stackName)
+	return d.printStackOutputs(ctx, name)
 }
 
+// stackName derives the CloudFormation stack name for a deployment stage.
+func stackName(stage string) string {
+	return fmt.Sprintf("eagle-image-api-%s", stage)
+}
+
+// getTemplateBody returns the CloudFormation template, read from localPath
+// when set and otherwise downloaded from the project repository.
 func getTemplateBody(localPath string) (string, error) {
 	if localPath != "" {
 		data, err := os.ReadFile(localPath)
@@ -121,8 +200,12 @@ func getTemplateBody(localPath string) (string, error) {
 		return string(data), nil
 	}
 
-	fmt.Println("Fetching CloudFormation template from GitHub...")
-	resp, err := http.Get(defaultTemplateURL)
+	req, err := http.NewRequest(http.MethodGet, templateURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("building template request: %w", err)
+	}
+
+	resp, err := templateClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetching template: %w", err)
 	}
@@ -139,71 +222,74 @@ func getTemplateBody(localPath string) (string, error) {
 	return string(data), nil
 }
 
-func setupECRAndPushImage(ctx context.Context, cfg aws.Config) (string, error) {
-	ecrClient := ecr.NewFromConfig(cfg)
-
-	// Create ECR repository if it doesn't exist
-	repoURI, err := ensureECRRepo(ctx, ecrClient)
+// setupECRAndPushImage ensures the ECR repository exists and mirrors the
+// published Docker Hub image into it, returning the pushed image URI.
+func (d *deployer) setupECRAndPushImage(ctx context.Context) (string, error) {
+	repoURI, err := d.ensureECRRepo(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	// Get ECR auth token
-	authToken, endpoint, err := getECRAuth(ctx, ecrClient)
+	authToken, endpoint, err := d.getECRAuth(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting ECR auth: %w", err)
 	}
 
-	// Docker login to ECR
-	if err := dockerLogin(authToken, endpoint); err != nil {
+	username, password, err := decodeAuthToken(authToken)
+	if err != nil {
+		return "", fmt.Errorf("docker login to ECR: %w", err)
+	}
+	if err := d.docker(password, "login", "--username", username, "--password-stdin", endpoint); err != nil {
 		return "", fmt.Errorf("docker login to ECR: %w", err)
 	}
 
-	sourceImage := fmt.Sprintf("nicobistolfi/eagle-image-api:%s", flags.imageTag)
-	targetImage := fmt.Sprintf("%s:%s", repoURI, flags.imageTag)
+	sourceImage := fmt.Sprintf("%s:%s", DockerHubRepo, d.flags.imageTag)
+	targetImage := fmt.Sprintf("%s:%s", repoURI, d.flags.imageTag)
 
-	// Pull from Docker Hub
-	fmt.Printf("Pulling %s...\n", sourceImage)
-	if err := runDockerCmd("pull", sourceImage); err != nil {
+	fmt.Fprintf(d.out, "Pulling %s...\n", sourceImage)
+	if err := d.docker("", "pull", sourceImage); err != nil {
 		return "", fmt.Errorf("pulling image: %w", err)
 	}
 
-	// Tag for ECR
-	if err := runDockerCmd("tag", sourceImage, targetImage); err != nil {
+	if err := d.docker("", "tag", sourceImage, targetImage); err != nil {
 		return "", fmt.Errorf("tagging image: %w", err)
 	}
 
-	// Push to ECR
-	fmt.Printf("Pushing to ECR: %s...\n", targetImage)
-	if err := runDockerCmd("push", targetImage); err != nil {
+	fmt.Fprintf(d.out, "Pushing to ECR: %s...\n", targetImage)
+	if err := d.docker("", "push", targetImage); err != nil {
 		return "", fmt.Errorf("pushing image to ECR: %w", err)
 	}
 
 	return targetImage, nil
 }
 
-func ensureECRRepo(ctx context.Context, client *ecr.Client) (string, error) {
-	desc, err := client.DescribeRepositories(ctx, &ecr.DescribeRepositoriesInput{
-		RepositoryNames: []string{ecrRepoName},
+// ensureECRRepo returns the URI of the ECR repository, creating it when the
+// describe call reports it missing.
+func (d *deployer) ensureECRRepo(ctx context.Context) (string, error) {
+	desc, err := d.ecr.DescribeRepositories(ctx, &ecr.DescribeRepositoriesInput{
+		RepositoryNames: []string{ECRRepoName},
 	})
 	if err == nil && len(desc.Repositories) > 0 {
 		return aws.ToString(desc.Repositories[0].RepositoryUri), nil
 	}
 
-	// Create the repository
-	fmt.Printf("Creating ECR repository %q...\n", ecrRepoName)
-	out, err := client.CreateRepository(ctx, &ecr.CreateRepositoryInput{
-		RepositoryName:     aws.String(ecrRepoName),
+	fmt.Fprintf(d.out, "Creating ECR repository %q...\n", ECRRepoName)
+	out, err := d.ecr.CreateRepository(ctx, &ecr.CreateRepositoryInput{
+		RepositoryName:     aws.String(ECRRepoName),
 		ImageTagMutability: ecrtypes.ImageTagMutabilityMutable,
 	})
 	if err != nil {
 		return "", fmt.Errorf("creating ECR repository: %w", err)
 	}
+	if out.Repository == nil {
+		return "", fmt.Errorf("creating ECR repository: no repository returned")
+	}
 	return aws.ToString(out.Repository.RepositoryUri), nil
 }
 
-func getECRAuth(ctx context.Context, client *ecr.Client) (string, string, error) {
-	out, err := client.GetAuthorizationToken(ctx, &ecr.GetAuthorizationTokenInput{})
+// getECRAuth returns the base64 authorization token and registry endpoint.
+func (d *deployer) getECRAuth(ctx context.Context) (string, string, error) {
+	out, err := d.ecr.GetAuthorizationToken(ctx, &ecr.GetAuthorizationTokenInput{})
 	if err != nil {
 		return "", "", err
 	}
@@ -214,157 +300,199 @@ func getECRAuth(ctx context.Context, client *ecr.Client) (string, string, error)
 	return aws.ToString(auth.AuthorizationToken), aws.ToString(auth.ProxyEndpoint), nil
 }
 
-func dockerLogin(authToken, endpoint string) error {
+// decodeAuthToken splits an ECR authorization token into username and
+// password. The token is base64 of "user:password".
+func decodeAuthToken(authToken string) (username, password string, err error) {
 	decoded, err := base64.StdEncoding.DecodeString(authToken)
 	if err != nil {
-		return fmt.Errorf("decoding auth token: %w", err)
+		return "", "", fmt.Errorf("decoding auth token: %w", err)
 	}
 	parts := strings.SplitN(string(decoded), ":", 2)
 	if len(parts) != 2 {
-		return fmt.Errorf("unexpected auth token format")
+		return "", "", fmt.Errorf("unexpected auth token format")
 	}
-
-	cmd := exec.Command("docker", "login", "--username", parts[0], "--password-stdin", endpoint)
-	cmd.Stdin = strings.NewReader(parts[1])
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return parts[0], parts[1], nil
 }
 
-func runDockerCmd(args ...string) error {
+// runDockerCmd shells out to the docker binary, piping stdin when non-empty.
+func runDockerCmd(stdin string, args ...string) error {
 	cmd := exec.Command("docker", args...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
-func deployStack(ctx context.Context, cfg aws.Config, stackName, templateBody, imageURI string) error {
-	cfClient := cloudformation.NewFromConfig(cfg)
-
-	params := []cftypes.Parameter{
-		{ParameterKey: aws.String("Stage"), ParameterValue: aws.String(flags.stage)},
-		{ParameterKey: aws.String("ImageUri"), ParameterValue: aws.String(imageURI)},
-		{ParameterKey: aws.String("Environment"), ParameterValue: aws.String(flags.environment)},
-		{ParameterKey: aws.String("ApiEndpoint"), ParameterValue: aws.String(flags.apiEndpoint)},
-		{ParameterKey: aws.String("Quality"), ParameterValue: aws.String(flags.quality)},
-		{ParameterKey: aws.String("Fit"), ParameterValue: aws.String(flags.fit)},
-		{ParameterKey: aws.String("LogLevel"), ParameterValue: aws.String(flags.logLevel)},
-		{ParameterKey: aws.String("OriginWhitelist"), ParameterValue: aws.String(flags.originWhitelist)},
-		{ParameterKey: aws.String("RedirectOnError"), ParameterValue: aws.String(flags.redirectOnError)},
-		{ParameterKey: aws.String("WebP"), ParameterValue: aws.String(flags.webp)},
-		{ParameterKey: aws.String("Avif"), ParameterValue: aws.String(flags.avif)},
-		{ParameterKey: aws.String("AvifMaxMp"), ParameterValue: aws.String(flags.avifMaxMp)},
+// buildParameters maps the deploy flags onto the CloudFormation parameters
+// declared in template.yml. Order is fixed to keep the mapping reviewable.
+func buildParameters(f deployFlags, imageURI string) []cftypes.Parameter {
+	pairs := []struct{ key, value string }{
+		{"Stage", f.stage},
+		{"ImageUri", imageURI},
+		{"Environment", f.environment},
+		{"ApiEndpoint", f.apiEndpoint},
+		{"Quality", f.quality},
+		{"Fit", f.fit},
+		{"LogLevel", f.logLevel},
+		{"OriginWhitelist", f.originWhitelist},
+		{"RedirectOnError", f.redirectOnError},
+		{"WebP", f.webp},
+		{"Avif", f.avif},
+		{"AvifMaxMp", f.avifMaxMp},
 	}
 
-	// Check if stack exists
-	_, err := cfClient.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
+	params := make([]cftypes.Parameter, 0, len(pairs))
+	for _, p := range pairs {
+		params = append(params, cftypes.Parameter{
+			ParameterKey:   aws.String(p.key),
+			ParameterValue: aws.String(p.value),
+		})
+	}
+	return params
+}
+
+// buildTags returns the tags applied to the CloudFormation stack.
+func buildTags(f deployFlags) []cftypes.Tag {
+	return []cftypes.Tag{
+		{Key: aws.String("Project"), Value: aws.String("eagle-image-api")},
+		{Key: aws.String("Stage"), Value: aws.String(f.stage)},
+		{Key: aws.String("ManagedBy"), Value: aws.String("eagle-cli")},
+	}
+}
+
+// deployStack creates the stack, or updates it when it already exists, then
+// blocks until CloudFormation reaches a terminal status.
+func (d *deployer) deployStack(ctx context.Context, name, templateBody, imageURI string) error {
+	params := buildParameters(d.flags, imageURI)
+	tags := buildTags(d.flags)
+	capabilities := []cftypes.Capability{cftypes.CapabilityCapabilityNamedIam}
+
+	_, err := d.cfn.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
+		StackName: aws.String(name),
 	})
 
 	if err != nil {
-		// Stack doesn't exist, create it
-		fmt.Println("Creating new stack...")
-		_, err = cfClient.CreateStack(ctx, &cloudformation.CreateStackInput{
-			StackName:    aws.String(stackName),
+		fmt.Fprintln(d.out, "Creating new stack...")
+		_, err = d.cfn.CreateStack(ctx, &cloudformation.CreateStackInput{
+			StackName:    aws.String(name),
 			TemplateBody: aws.String(templateBody),
 			Parameters:   params,
-			Capabilities: []cftypes.Capability{cftypes.CapabilityCapabilityNamedIam},
-			Tags: []cftypes.Tag{
-				{Key: aws.String("Project"), Value: aws.String("eagle-image-api")},
-				{Key: aws.String("Stage"), Value: aws.String(flags.stage)},
-				{Key: aws.String("ManagedBy"), Value: aws.String("eagle-cli")},
-			},
+			Capabilities: capabilities,
+			Tags:         tags,
 		})
 		if err != nil {
 			return fmt.Errorf("creating stack: %w", err)
 		}
-		fmt.Println("Waiting for stack creation to complete...")
-		return waitForStack(ctx, cfClient, stackName)
+		fmt.Fprintln(d.out, "Waiting for stack creation to complete...")
+		return d.waitForStack(ctx, name)
 	}
 
-	// Stack exists, update it
-	fmt.Println("Updating existing stack...")
-	_, err = cfClient.UpdateStack(ctx, &cloudformation.UpdateStackInput{
-		StackName:    aws.String(stackName),
+	fmt.Fprintln(d.out, "Updating existing stack...")
+	_, err = d.cfn.UpdateStack(ctx, &cloudformation.UpdateStackInput{
+		StackName:    aws.String(name),
 		TemplateBody: aws.String(templateBody),
 		Parameters:   params,
-		Capabilities: []cftypes.Capability{cftypes.CapabilityCapabilityNamedIam},
-		Tags: []cftypes.Tag{
-			{Key: aws.String("Project"), Value: aws.String("eagle-image-api")},
-			{Key: aws.String("Stage"), Value: aws.String(flags.stage)},
-			{Key: aws.String("ManagedBy"), Value: aws.String("eagle-cli")},
-		},
+		Capabilities: capabilities,
+		Tags:         tags,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "No updates are to be performed") {
-			fmt.Println("Stack is already up to date.")
+			fmt.Fprintln(d.out, "Stack is already up to date.")
 			return nil
 		}
 		return fmt.Errorf("updating stack: %w", err)
 	}
-	fmt.Println("Waiting for stack update to complete...")
-	return waitForStack(ctx, cfClient, stackName)
+	fmt.Fprintln(d.out, "Waiting for stack update to complete...")
+	return d.waitForStack(ctx, name)
 }
 
-func waitForStack(ctx context.Context, client *cloudformation.Client, stackName string) error {
+// isTerminalFailure reports whether a stack status means the deployment ended
+// without success and no further polling will help.
+func isTerminalFailure(status cftypes.StackStatus) bool {
+	switch status {
+	case cftypes.StackStatusCreateFailed,
+		cftypes.StackStatusRollbackComplete,
+		cftypes.StackStatusRollbackFailed,
+		cftypes.StackStatusUpdateRollbackComplete,
+		cftypes.StackStatusUpdateRollbackFailed,
+		cftypes.StackStatusDeleteComplete,
+		cftypes.StackStatusDeleteFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// isTerminalSuccess reports whether a stack status means the deployment
+// finished successfully.
+func isTerminalSuccess(status cftypes.StackStatus) bool {
+	return status == cftypes.StackStatusCreateComplete ||
+		status == cftypes.StackStatusUpdateComplete
+}
+
+// waitForStack polls the stack until it succeeds, fails, or ctx is done.
+func (d *deployer) waitForStack(ctx context.Context, name string) error {
 	for {
-		out, err := client.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
-			StackName: aws.String(stackName),
+		out, err := d.cfn.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
+			StackName: aws.String(name),
 		})
 		if err != nil {
 			return fmt.Errorf("describing stack: %w", err)
 		}
 		if len(out.Stacks) == 0 {
-			return fmt.Errorf("stack %q not found", stackName)
+			return fmt.Errorf("stack %q not found", name)
 		}
 
-		status := out.Stacks[0].StackStatus
-		switch status {
-		case cftypes.StackStatusCreateComplete, cftypes.StackStatusUpdateComplete:
-			fmt.Printf("Stack %s completed successfully.\n", status)
+		stack := out.Stacks[0]
+		status := stack.StackStatus
+
+		switch {
+		case isTerminalSuccess(status):
+			fmt.Fprintf(d.out, "Stack %s completed successfully.\n", status)
 			return nil
-		case cftypes.StackStatusCreateFailed, cftypes.StackStatusRollbackComplete,
-			cftypes.StackStatusRollbackFailed, cftypes.StackStatusUpdateRollbackComplete,
-			cftypes.StackStatusUpdateRollbackFailed, cftypes.StackStatusDeleteComplete,
-			cftypes.StackStatusDeleteFailed:
+		case isTerminalFailure(status):
 			reason := ""
-			if out.Stacks[0].StackStatusReason != nil {
-				reason = ": " + *out.Stacks[0].StackStatusReason
+			if stack.StackStatusReason != nil {
+				reason = ": " + *stack.StackStatusReason
 			}
 			return fmt.Errorf("stack reached terminal status %s%s", status, reason)
-		default:
-			fmt.Printf("  Status: %s...\n", status)
-			time.Sleep(10 * time.Second)
 		}
+
+		fmt.Fprintf(d.out, "  Status: %s...\n", status)
+
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		d.sleep(stackPollInterval)
 	}
 }
 
-func printStackOutputs(ctx context.Context, cfg aws.Config, stackName string) error {
-	cfClient := cloudformation.NewFromConfig(cfg)
-	out, err := cfClient.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
+// printStackOutputs writes the stack outputs, highlighting the two URLs a
+// user needs after a successful deployment.
+func (d *deployer) printStackOutputs(ctx context.Context, name string) error {
+	out, err := d.cfn.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{
+		StackName: aws.String(name),
 	})
 	if err != nil {
 		return fmt.Errorf("describing stack outputs: %w", err)
 	}
 	if len(out.Stacks) == 0 {
-		return fmt.Errorf("stack %q not found", stackName)
+		return fmt.Errorf("stack %q not found", name)
 	}
 
-	fmt.Println("\n=== Deployment Outputs ===")
+	fmt.Fprintln(d.out, "\n=== Deployment Outputs ===")
 	for _, output := range out.Stacks[0].Outputs {
-		fmt.Printf("  %s: %s\n", aws.ToString(output.OutputKey), aws.ToString(output.OutputValue))
+		fmt.Fprintf(d.out, "  %s: %s\n", aws.ToString(output.OutputKey), aws.ToString(output.OutputValue))
 	}
 
-	// Print user-friendly summary
 	for _, output := range out.Stacks[0].Outputs {
-		key := aws.ToString(output.OutputKey)
-		val := aws.ToString(output.OutputValue)
-		switch key {
+		switch aws.ToString(output.OutputKey) {
 		case "ApiUrl":
-			fmt.Printf("\nAPI Gateway URL: %s\n", val)
+			fmt.Fprintf(d.out, "\nAPI Gateway URL: %s\n", aws.ToString(output.OutputValue))
 		case "CloudFrontUrl":
-			fmt.Printf("CloudFront URL:  %s\n", val)
+			fmt.Fprintf(d.out, "CloudFront URL:  %s\n", aws.ToString(output.OutputValue))
 		}
 	}
 
