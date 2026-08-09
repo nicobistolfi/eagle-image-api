@@ -1,3 +1,15 @@
+// Package image fetches remote images and applies the requested
+// transformations using libvips through govips.
+//
+// A request follows a fixed pipeline: [Image.IsImage] cheaply rejects URLs
+// that are not images, [Image.Load] downloads the bytes subject to the origin
+// allowlist, and [Image.Process] resizes, applies operations, and encodes the
+// result. Output format is negotiated from the client's Accept header, with
+// AVIF preferred over WebP and a megapixel ceiling that keeps slow AVIF
+// encodes from exhausting the Lambda timeout.
+//
+// Callers must have started libvips with vips.Startup before using this
+// package.
 package image
 
 import (
@@ -12,14 +24,18 @@ import (
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/zantez/image-api/internal/config"
-	"github.com/zantez/image-api/internal/logger"
+	"github.com/nicobistolfi/eagle-image-api/internal/config"
+	"github.com/nicobistolfi/eagle-image-api/internal/logger"
 )
 
-// ErrOriginNotAllowed is returned when the image URL domain is not in the whitelist.
+// ErrOriginNotAllowed is returned by [Image.Load] when the image URL's domain
+// is not in the configured origin allowlist.
 //
-//lint:ignore ST1005 API contract requires capitalized error message
-var ErrOriginNotAllowed = errors.New("Origin not allowed") //nolint:stylecheck
+// The message is capitalised because it is served verbatim as the HTTP
+// response body, which is part of the API's contract with existing clients.
+//
+//lint:ignore ST1005 the text is a client-facing response body
+var ErrOriginNotAllowed = errors.New("Origin not allowed") //nolint:staticcheck // client-facing message
 
 var defaultHeaders = map[string]string{
 	"User-Agent":                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
@@ -389,8 +405,12 @@ func (img *Image) applyOperations(vImg *vips.ImageRef, p QueryParams) error {
 				return fmt.Errorf("rotate: %w", err)
 			}
 		default:
-			// For arbitrary angles, use Similarity with angle
-			if err := vImg.Similarity(1.0, float64(p.Rotate), nil, 0, 0, 0, 0); err != nil {
+			// For arbitrary angles, use Similarity. The background must not
+			// be nil: govips dereferences it without a check, so passing nil
+			// crashes the process. Transparent black matches what libvips
+			// uses to fill the corners exposed by the rotation.
+			background := &vips.ColorRGBA{}
+			if err := vImg.Similarity(1.0, float64(p.Rotate), background, 0, 0, 0, 0); err != nil {
 				return fmt.Errorf("rotate arbitrary: %w", err)
 			}
 		}

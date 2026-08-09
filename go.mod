@@ -1,4 +1,4 @@
-module github.com/zantez/image-api
+module github.com/nicobistolfi/eagle-image-api
 
 go 1.24
 

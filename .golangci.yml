@@ -1,0 +1,41 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unconvert
+    - unused
+
+  settings:
+    errcheck:
+      # Closing a response body in a defer has no useful error to act on, and
+      # writes to an in-process io.Writer cannot meaningfully fail.
+      exclude-functions:
+        - (io.ReadCloser).Close
+        - (io.Closer).Close
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+
+  exclusions:
+    rules:
+      # Progress output goes to an io.Writer that never fails in practice;
+      # checking every Fprintf would bury the actual logic.
+      - linters: [errcheck]
+        source: "^\\s*fmt\\.Fprint(f|ln)?\\("
+      # Test helpers deliberately construct odd inputs.
+      - linters: [errcheck]
+        path: _test\.go
+
+formatters:
+  enable:
+    - gofmt
