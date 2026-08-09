@@ -7,8 +7,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.43.4
 	github.com/aws/aws-sdk-go-v2/config v1.32.35
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.9
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.56.2
-	github.com/davidbyttow/govips/v2 v2.17.0
+	github.com/aws/aws-sdk-go-v2/service/ecr v1.60.4
+	github.com/davidbyttow/govips/v2 v2.18.0
 	github.com/spf13/cobra v1.10.2
 )
 
