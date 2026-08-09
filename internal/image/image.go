@@ -67,58 +67,63 @@ type QueryParams struct {
 	Kernel       string
 }
 
-// ParseQueryParams converts a map of string parameters to QueryParams.
+// ParseQueryParams converts a map of request parameters to [QueryParams].
+//
+// Malformed numeric values are left at their zero value rather than rejected,
+// so a typo in one parameter degrades that single transformation instead of
+// failing the whole request.
 func ParseQueryParams(m map[string]string) QueryParams {
 	p := QueryParams{
-		URL:        m["url"],
-		Fit:        m["fit"],
-		Position:   m["position"],
-		Background: m["background"],
-		Kernel:     m["kernel"],
+		URL:          m["url"],
+		Fit:          m["fit"],
+		Position:     m["position"],
+		Background:   m["background"],
+		Kernel:       m["kernel"],
+		Width:        intParam(m, "width"),
+		Height:       intParam(m, "height"),
+		Quality:      intParam(m, "quality"),
+		Rotate:       intParam(m, "rotate"),
+		AlphaQuality: intParam(m, "alphaQuality"),
+		Loop:         intParam(m, "loop"),
+		Delay:        intParam(m, "delay"),
+		WebpEffort:   intParam(m, "webpEffort"),
+		Blur:         floatParam(m, "blur"),
+		Sharpen:      floatParam(m, "sharpen"),
+		Lossless:     boolPtrParam(m, "lossless"),
 	}
 
-	if v, ok := m["width"]; ok && v != "" {
-		p.Width, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["height"]; ok && v != "" {
-		p.Height, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["quality"]; ok && v != "" {
-		p.Quality, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["blur"]; ok && v != "" {
-		p.Blur, _ = strconv.ParseFloat(v, 64)
-	}
-	if v, ok := m["sharpen"]; ok && v != "" {
-		p.Sharpen, _ = strconv.ParseFloat(v, 64)
-	}
-	if _, ok := m["flip"]; ok {
-		p.Flip = true
-	}
-	if _, ok := m["flop"]; ok {
-		p.Flop = true
-	}
-	if v, ok := m["rotate"]; ok && v != "" {
-		p.Rotate, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["alphaQuality"]; ok && v != "" {
-		p.AlphaQuality, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["loop"]; ok && v != "" {
-		p.Loop, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["delay"]; ok && v != "" {
-		p.Delay, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["webpEffort"]; ok && v != "" {
-		p.WebpEffort, _ = strconv.Atoi(v)
-	}
-	if v, ok := m["lossless"]; ok {
-		b := strings.ToLower(v) == "true" || v == "1"
-		p.Lossless = &b
-	}
+	// flip and flop are flags: presence alone turns them on, so `?flip` works
+	// as well as `?flip=1`.
+	_, p.Flip = m["flip"]
+	_, p.Flop = m["flop"]
 
 	return p
+}
+
+// intParam reads an integer parameter, returning 0 when it is absent, empty,
+// or unparseable.
+func intParam(m map[string]string, key string) int {
+	n, _ := strconv.Atoi(m[key])
+	return n
+}
+
+// floatParam reads a float parameter, returning 0 when it is absent, empty,
+// or unparseable.
+func floatParam(m map[string]string, key string) float64 {
+	f, _ := strconv.ParseFloat(m[key], 64)
+	return f
+}
+
+// boolPtrParam reads an optional boolean. It returns nil when the parameter is
+// absent, which keeps "not specified" distinct from "explicitly false" so the
+// encoder default is preserved.
+func boolPtrParam(m map[string]string, key string) *bool {
+	v, ok := m[key]
+	if !ok {
+		return nil
+	}
+	b := strings.EqualFold(v, "true") || v == "1"
+	return &b
 }
 
 // Image handles fetching, processing, and converting images.
@@ -213,6 +218,8 @@ func (img *Image) Process(params QueryParams, acceptHeader string) error {
 	return nil
 }
 
+// resize scales the image according to the requested fit mode, then records
+// the resulting dimensions on img.
 func (img *Image) resize(vImg *vips.ImageRef, p QueryParams) error {
 	if p.Width == 0 && p.Height == 0 {
 		return nil
@@ -226,48 +233,47 @@ func (img *Image) resize(vImg *vips.ImageRef, p QueryParams) error {
 		fit = config.Cfg.Fit
 	}
 
-	switch fit {
-	case "cover":
-		// Resize to cover target dimensions, then crop
-		if err := resizeCover(vImg, p.Width, p.Height, p.Position); err != nil {
-			return err
-		}
-	case "contain":
-		// Resize to fit within target, maintaining aspect ratio
-		if err := resizeContain(vImg, p.Width, p.Height); err != nil {
-			return err
-		}
-	case "fill":
-		// Force resize to exact dimensions
-		if p.Width > 0 && p.Height > 0 {
-			hScale := float64(p.Width) / float64(origWidth)
-			vScale := float64(p.Height) / float64(origHeight)
-			if err := vImg.ResizeWithVScale(hScale, vScale, vips.KernelLanczos3); err != nil {
-				return err
-			}
-		}
-	case "inside":
-		// Same as contain: fit within dimensions
-		if err := resizeContain(vImg, p.Width, p.Height); err != nil {
-			return err
-		}
-	case "outside":
-		// Resize so smallest side matches target
-		if err := resizeOutside(vImg, p.Width, p.Height, origWidth, origHeight); err != nil {
-			return err
-		}
-	default:
-		// Default: simple thumbnail resize
-		if p.Width > 0 || p.Height > 0 {
-			if err := resizeContain(vImg, p.Width, p.Height); err != nil {
-				return err
-			}
-		}
+	if err := applyFit(vImg, fit, p, origWidth, origHeight); err != nil {
+		return err
 	}
 
 	img.Width = vImg.Width()
 	img.Height = vImg.Height()
 	return nil
+}
+
+// applyFit dispatches to the resize strategy named by fit. An unrecognised
+// mode falls back to "contain", which is the least surprising behaviour: the
+// whole image stays visible within the requested box.
+func applyFit(vImg *vips.ImageRef, fit string, p QueryParams, origWidth, origHeight int) error {
+	switch fit {
+	case "cover":
+		// Scale to cover both dimensions, then crop away the overflow.
+		return resizeCover(vImg, p.Width, p.Height, p.Position)
+	case "fill":
+		// Stretch to the exact dimensions, ignoring the aspect ratio.
+		return resizeFill(vImg, p.Width, p.Height, origWidth, origHeight)
+	case "outside":
+		// Scale so the image covers the box on its smallest side.
+		return resizeOutside(vImg, p.Width, p.Height, origWidth, origHeight)
+	case "contain", "inside":
+		return resizeContain(vImg, p.Width, p.Height)
+	default:
+		return resizeContain(vImg, p.Width, p.Height)
+	}
+}
+
+// resizeFill stretches the image to exactly width x height. Both dimensions
+// are required; with only one there is no second scale factor to apply, so the
+// image is left untouched.
+func resizeFill(vImg *vips.ImageRef, width, height, origWidth, origHeight int) error {
+	if width <= 0 || height <= 0 {
+		return nil
+	}
+
+	hScale := float64(width) / float64(origWidth)
+	vScale := float64(height) / float64(origHeight)
+	return vImg.ResizeWithVScale(hScale, vScale, vips.KernelLanczos3)
 }
 
 func resizeCover(vImg *vips.ImageRef, width, height int, position string) error {
@@ -390,101 +396,134 @@ func (img *Image) applyOperations(vImg *vips.ImageRef, p QueryParams) error {
 	}
 
 	if p.Rotate != 0 {
-		// govips Rotate takes a vips.Angle for 90-degree increments
-		switch p.Rotate {
-		case 90:
-			if err := vImg.Rotate(vips.Angle90); err != nil {
-				return fmt.Errorf("rotate: %w", err)
-			}
-		case 180:
-			if err := vImg.Rotate(vips.Angle180); err != nil {
-				return fmt.Errorf("rotate: %w", err)
-			}
-		case 270:
-			if err := vImg.Rotate(vips.Angle270); err != nil {
-				return fmt.Errorf("rotate: %w", err)
-			}
-		default:
-			// For arbitrary angles, use Similarity. The background must not
-			// be nil: govips dereferences it without a check, so passing nil
-			// crashes the process. Transparent black matches what libvips
-			// uses to fill the corners exposed by the rotation.
-			background := &vips.ColorRGBA{}
-			if err := vImg.Similarity(1.0, float64(p.Rotate), background, 0, 0, 0, 0); err != nil {
-				return fmt.Errorf("rotate arbitrary: %w", err)
-			}
+		if err := rotate(vImg, p.Rotate); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (img *Image) convertFormat(vImg *vips.ImageRef, p QueryParams, accept string) error {
-	cfg := &config.Cfg
+// rotate turns the image by degrees. Right-angle turns use the cheap
+// quadrant rotation; anything else goes through an affine transform.
+func rotate(vImg *vips.ImageRef, degrees int) error {
+	quadrants := map[int]vips.Angle{
+		90:  vips.Angle90,
+		180: vips.Angle180,
+		270: vips.Angle270,
+	}
 
+	if angle, ok := quadrants[degrees]; ok {
+		if err := vImg.Rotate(angle); err != nil {
+			return fmt.Errorf("rotate: %w", err)
+		}
+		return nil
+	}
+
+	// For arbitrary angles, use Similarity. The background must not be nil:
+	// govips dereferences it without a check, so passing nil crashes the
+	// process. Transparent black matches what libvips uses to fill the
+	// corners the rotation exposes.
+	background := &vips.ColorRGBA{}
+	if err := vImg.Similarity(1.0, float64(degrees), background, 0, 0, 0, 0); err != nil {
+		return fmt.Errorf("rotate arbitrary: %w", err)
+	}
+	return nil
+}
+
+// convertFormat encodes the processed image, negotiating AVIF or WebP from the
+// client's Accept header and falling back to the source format.
+func (img *Image) convertFormat(vImg *vips.ImageRef, p QueryParams, accept string) error {
 	quality := p.Quality
 	if quality == 0 {
-		quality = cfg.Quality
+		quality = config.Cfg.Quality
 	}
 
-	// Get image dimensions for megapixel check
-	w := vImg.Width()
-	h := vImg.Height()
-	areaMp := float64(w*h) / 1000000.0
+	switch {
+	case img.avifAllowed(vImg, p, accept):
+		return img.exportAvif(vImg, p, quality)
+	case strings.Contains(accept, "image/webp") && config.Cfg.WebP:
+		return img.exportWebp(vImg, p, quality)
+	default:
+		return img.exportNative(vImg)
+	}
+}
 
+// avifAllowed reports whether the result should be encoded as AVIF. AVIF is
+// the best format on offer but also the slowest to encode, so it is limited to
+// still images below a configurable megapixel ceiling — above that, encoding
+// can outlast the Lambda timeout.
+func (img *Image) avifAllowed(vImg *vips.ImageRef, p QueryParams, accept string) bool {
+	if !strings.Contains(accept, "image/avif") || !config.Cfg.AVIF {
+		return false
+	}
+	if img.ContentType == "image/gif" {
+		return false
+	}
+
+	w, h := vImg.Width(), vImg.Height()
+	areaMp := megapixels(w, h)
 	logger.Debug("image dimensions", "width", w, "height", h, "areaMp", areaMp)
 
-	// Check requested dimensions too
-	reqAreaExceeds := false
-	if p.Width > 0 && p.Height > 0 {
-		reqAreaMp := float64(p.Width*p.Height) / 1000000.0
-		reqAreaExceeds = reqAreaMp > cfg.AVIFMaxMP
+	if areaMp > config.Cfg.AVIFMaxMP {
+		return false
+	}
+	// The requested size counts too: a small source upscaled past the ceiling
+	// is just as expensive to encode.
+	if p.Width > 0 && p.Height > 0 && megapixels(p.Width, p.Height) > config.Cfg.AVIFMaxMP {
+		return false
 	}
 
-	maxAreaExceeds := areaMp > cfg.AVIFMaxMP
-	if reqAreaExceeds {
-		maxAreaExceeds = true
+	return true
+}
+
+// megapixels returns the pixel area of width x height in megapixels.
+func megapixels(width, height int) float64 {
+	return float64(width*height) / 1_000_000.0
+}
+
+func (img *Image) exportAvif(vImg *vips.ImageRef, p QueryParams, quality int) error {
+	ep := vips.NewAvifExportParams()
+	ep.Quality = quality
+	if p.Lossless != nil {
+		ep.Lossless = *p.Lossless
+	}
+	if p.WebpEffort > 0 {
+		ep.Speed = p.WebpEffort
 	}
 
-	isGif := img.ContentType == "image/gif"
-
-	if strings.Contains(accept, "image/avif") && !isGif && cfg.AVIF && !maxAreaExceeds {
-		img.ContentType = "image/avif"
-		ep := vips.NewAvifExportParams()
-		ep.Quality = quality
-		if p.Lossless != nil {
-			ep.Lossless = *p.Lossless
-		}
-		if p.WebpEffort > 0 {
-			ep.Speed = p.WebpEffort
-		}
-		buf, _, err := vImg.ExportAvif(ep)
-		if err != nil {
-			return fmt.Errorf("export avif: %w", err)
-		}
-		img.Data = buf
-		return nil
+	buf, _, err := vImg.ExportAvif(ep)
+	if err != nil {
+		return fmt.Errorf("export avif: %w", err)
 	}
 
-	if strings.Contains(accept, "image/webp") && cfg.WebP {
-		img.ContentType = "image/webp"
-		ep := vips.NewWebpExportParams()
-		ep.Quality = quality
-		if p.Lossless != nil {
-			ep.Lossless = *p.Lossless
-		}
-		if p.WebpEffort > 0 {
-			ep.ReductionEffort = p.WebpEffort
-		}
-		buf, _, err := vImg.ExportWebp(ep)
-		if err != nil {
-			return fmt.Errorf("export webp: %w", err)
-		}
-		img.Data = buf
-		return nil
+	img.ContentType = "image/avif"
+	img.Data = buf
+	return nil
+}
+
+func (img *Image) exportWebp(vImg *vips.ImageRef, p QueryParams, quality int) error {
+	ep := vips.NewWebpExportParams()
+	ep.Quality = quality
+	if p.Lossless != nil {
+		ep.Lossless = *p.Lossless
+	}
+	if p.WebpEffort > 0 {
+		ep.ReductionEffort = p.WebpEffort
 	}
 
-	// Export in original format
+	buf, _, err := vImg.ExportWebp(ep)
+	if err != nil {
+		return fmt.Errorf("export webp: %w", err)
+	}
+
+	img.ContentType = "image/webp"
+	img.Data = buf
+	return nil
+}
+
+// exportNative re-encodes the image in the format it arrived in.
+func (img *Image) exportNative(vImg *vips.ImageRef) error {
 	buf, _, err := vImg.ExportNative()
 	if err != nil {
 		return fmt.Errorf("export native: %w", err)

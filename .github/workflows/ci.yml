@@ -1,7 +1,21 @@
 name: Go CI
 
 on:
+  # Run on its own for pull requests and main so the status badge and the
+  # coverage upload reflect reality, including for pull requests from forks.
+  push:
+    branches:
+      - main
+  pull_request:
+  # Still callable, so the deploy workflows gate on a green build.
   workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -33,7 +47,14 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test -race -coverprofile=coverage.out ./...
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Vet
         run: go vet ./...
@@ -54,6 +75,6 @@ jobs:
           install-go: false
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.10.1

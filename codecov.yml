@@ -1,0 +1,18 @@
+# Codecov configuration. See https://docs.codecov.com/docs/codecov-yaml
+coverage:
+  status:
+    project:
+      default:
+        # awesome-go asks for at least 80% coverage; hold the line there
+        # rather than at whatever the current number happens to be.
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: true
