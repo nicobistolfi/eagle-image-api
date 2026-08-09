@@ -81,6 +81,20 @@ pixel data.
 If your libvips build lacks an encoder (AVIF is the usual one), the affected
 tests skip rather than fail.
 
+### Smoke testing a deployment
+
+`scripts/smoke-test.sh` checks that a deployed instance is actually serving:
+health endpoint, a real transformation, WebP negotiation from the `Accept`
+header, and the error paths. CI runs it against the dev stack after every
+deploy, and you can point it at any deployment:
+
+```bash
+scripts/smoke-test.sh https://your-deployment.example.com
+```
+
+It is deliberately shallow — it proves the stack is wired together, not that
+every transformation is correct. The Go tests cover the latter.
+
 ## Commit messages
 
 Write a short imperative summary line, then a body explaining *why* the change
