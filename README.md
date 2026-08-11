@@ -158,6 +158,19 @@ eagle deploy --stage dev
 
 # Deploy to production
 eagle deploy --stage prod
+
+# Deploy an ad-hoc stage of your own
+eagle deploy --stage my-test
+```
+
+`dev` and `prod` are the conventional stages, but `--stage` accepts any name of
+1-20 characters made of lowercase letters, digits and hyphens, starting with a
+letter. The stage namespaces every resource in the stack, so each one is a fully
+independent deployment. An ad-hoc stage creates its own CloudFront distribution,
+Lambda function and API Gateway, so delete it when you are finished:
+
+```bash
+aws cloudformation delete-stack --stack-name eagle-image-api-my-test
 ```
 
 To deploy the template directly instead of using the CLI:

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -34,7 +35,17 @@ const (
 
 	// stackPollInterval is how long to wait between stack status checks.
 	stackPollInterval = 10 * time.Second
+
+	// stagePattern constrains --stage to names that are simultaneously valid
+	// as a CloudFormation stack name suffix, an IAM role name segment, an API
+	// Gateway stage name and a CloudFront origin path. It must stay identical
+	// to the AllowedPattern of the Stage parameter in template.yml; a test
+	// guards against the two drifting apart.
+	stagePattern = `^[a-z][a-z0-9-]{0,19}$`
 )
+
+// stageRegexp is the compiled form of stagePattern.
+var stageRegexp = regexp.MustCompile(stagePattern)
 
 // templateURL and templateClient are variables rather than constants so tests
 // can point the fetch at a local server.
@@ -120,7 +131,7 @@ func init() {
 // init so tests can build an independent command with its own flag storage.
 func registerDeployFlags(cmd *cobra.Command, dst *deployFlags) {
 	f := cmd.Flags()
-	f.StringVar(&dst.stage, "stage", "dev", "Deployment stage (sets Stage parameter and stack name)")
+	f.StringVar(&dst.stage, "stage", "dev", "Deployment stage, 1-20 characters of lowercase letters, digits and hyphens starting with a letter (e.g. dev, prod, my-test); sets the Stage parameter and stack name")
 	f.StringVar(&dst.region, "region", "us-west-1", "AWS region")
 	f.StringVar(&dst.template, "template", "", "Path to local CloudFormation template (default: fetched from GitHub)")
 	f.StringVar(&dst.quality, "quality", "80", "Image quality (0-100)")
@@ -162,6 +173,12 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 // run performs the full deployment: fetch template, mirror the image into
 // ECR, then create or update the CloudFormation stack.
 func (d *deployer) run(ctx context.Context) error {
+	// Validate first: an unusable stage name would otherwise only surface as a
+	// CloudFormation error, after a full image pull and ECR push.
+	if err := validateStage(d.flags.stage); err != nil {
+		return err
+	}
+
 	templateBody, err := getTemplateBody(d.flags.template)
 	if err != nil {
 		return fmt.Errorf("getting template: %w", err)
@@ -182,6 +199,15 @@ func (d *deployer) run(ctx context.Context) error {
 	}
 
 	return d.printStackOutputs(ctx, name)
+}
+
+// validateStage checks that stage can be used as a deployment namespace across
+// every AWS resource the template names after it.
+func validateStage(stage string) error {
+	if stageRegexp.MatchString(stage) {
+		return nil
+	}
+	return fmt.Errorf("invalid stage %q: must be 1-20 characters of lowercase letters, digits and hyphens, starting with a letter (pattern %s), for example dev, prod or my-test", stage, stagePattern)
 }
 
 // stackName derives the CloudFormation stack name for a deployment stage.

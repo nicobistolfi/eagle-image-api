@@ -613,6 +613,83 @@ func TestStackName(t *testing.T) {
 	}
 }
 
+// --- stage validation ------------------------------------------------------
+
+func TestValidateStage(t *testing.T) {
+	tests := []struct {
+		name  string
+		stage string
+		valid bool
+	}{
+		{"conventional dev", "dev", true},
+		{"conventional prod", "prod", true},
+		{"ad-hoc name", "nicotest", true},
+		{"hyphens and digits", "my-test-1", true},
+		{"single letter", "a", true},
+		{"twenty characters", strings.Repeat("a", 20), true},
+		{"empty", "", false},
+		{"uppercase", "Prod", false},
+		{"leading digit", "1abc", false},
+		{"underscore", "has_underscore", false},
+		{"space", "has space", false},
+		{"leading hyphen", "-leading-hyphen", false},
+		{"twenty one characters", strings.Repeat("a", 21), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateStage(tt.stage)
+			if tt.valid {
+				if err != nil {
+					t.Fatalf("validateStage(%q) error: %v", tt.stage, err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("validateStage(%q) = nil, want an error", tt.stage)
+			}
+			if !strings.Contains(err.Error(), stagePattern) {
+				t.Errorf("error = %v, want it to state the allowed pattern", err)
+			}
+			if !strings.Contains(err.Error(), "dev") {
+				t.Errorf("error = %v, want it to give an example", err)
+			}
+		})
+	}
+}
+
+// TestStageFlagUsageDocumentsFormat keeps `eagle deploy --help` explicit about
+// which stage names are accepted.
+func TestStageFlagUsageDocumentsFormat(t *testing.T) {
+	f := DeployCmd.Flags().Lookup("stage")
+	if f == nil {
+		t.Fatal("stage flag not found")
+	}
+	for _, want := range []string{"1-20", "lowercase", "my-test"} {
+		if !strings.Contains(f.Usage, want) {
+			t.Errorf("stage flag usage %q does not mention %q", f.Usage, want)
+		}
+	}
+}
+
+// TestStagePatternMatchesTemplate guards against the client-side pattern and
+// the template's AllowedPattern drifting apart.
+func TestStagePatternMatchesTemplate(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "template.yml"))
+	if err != nil {
+		t.Skipf("template.yml not readable: %v", err)
+	}
+	template := string(data)
+
+	want := "    AllowedPattern: '" + stagePattern + "'\n"
+	if !strings.Contains(template, want) {
+		t.Errorf("template.yml does not declare AllowedPattern %s for Stage", stagePattern)
+	}
+	if strings.Contains(template, "AllowedValues: [dev, prod]") {
+		t.Error("template.yml still restricts Stage to AllowedValues")
+	}
+}
+
 // --- stack lifecycle -------------------------------------------------------
 
 func TestDeployStackCreatesWhenMissing(t *testing.T) {
@@ -908,6 +985,25 @@ func TestDeployerRunTemplateFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "getting template") {
 		t.Errorf("error = %v, want it to identify the template step", err)
+	}
+}
+
+// TestDeployerRunRejectsInvalidStageBeforeDocker pins the ordering the fix is
+// about: an unusable stage costs no image pull or ECR push.
+func TestDeployerRunRejectsInvalidStageBeforeDocker(t *testing.T) {
+	docker := &recordingDocker{}
+	d, _ := newTestDeployer(&fakeECR{}, &fakeCFN{}, docker.run)
+	d.flags.stage = "Not Valid!"
+
+	err := d.run(context.Background())
+	if err == nil {
+		t.Fatal("expected an error for an invalid stage")
+	}
+	if !strings.Contains(err.Error(), stagePattern) {
+		t.Errorf("error = %v, want it to state the allowed pattern", err)
+	}
+	if len(docker.calls) != 0 {
+		t.Errorf("docker was invoked %d times, want 0 before stage validation passes", len(docker.calls))
 	}
 }
 
